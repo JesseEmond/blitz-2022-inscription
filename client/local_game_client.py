@@ -9,6 +9,6 @@ class LocalGameClient:
     async def run(self):
         print("[Running in local mode]")
         game_message: GameMessage = GameMessage(
-            tick=1, payload=Question(totems=[TotemQuestion(shape="I")])
+            tick=1, payload=Question(totems=[TotemQuestion(shape="L"), TotemQuestion(shape="O"), TotemQuestion(shape="J")])
         )
         self.solver.get_answer(game_message)
