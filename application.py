@@ -10,7 +10,7 @@ from solver import Solver
 
 async def run():
     is_local = "TOKEN" not in os.environ
-    solver = Solver(verbose=not is_local)
+    solver = Solver(verbose=is_local)
     if is_local:
         await LocalGameClient(solver).run()
     else:
