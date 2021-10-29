@@ -9,6 +9,25 @@ import astar_strategy
 import greedy_strategy
 
 
+def validate(totems: List[TotemAnswer]):
+    print("Verifying answer validity...  ", end="")
+    coords = set()
+    ok = True
+    for totem in totems:
+        for x, y in totem.coordinates:
+            if (x, y) in coords:
+                print("INVALID")
+                print(f"Duplicate coords: {(x, y)}")
+                ok = False
+            if x < 0 or y < 0:
+                print("INVALID")
+                print(f"Negative coords: {(x, y)}")
+                ok = False
+            coords.add((x, y))
+    if ok:
+        print("OK")
+
+
 class Solver:
     def __init__(self):
         verbose = "TOKEN" not in os.environ  # Ideally should pass this down, but I don't get logs then for some reason.
@@ -34,6 +53,8 @@ class Solver:
         #if self.verbose:
         #    print(f"Greedy would have given: {game_logic.score(greedy_strategy.solve(shapes))} points.")
         answer = Answer(totems)
+        if self.verbose:
+            validate(totems)
         if self.verbose:
             print("Sending Answer:", answer)
         total_time = time.time() - start_time

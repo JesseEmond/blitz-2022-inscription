@@ -56,7 +56,7 @@ class SearchNode:
 
     def score(self):
         # Negate to maximize score.
-        return -len(self.totems) * 100 -game_logic.score(self.totems, maxima=(self.max_x, self.max_y))
+        return -game_logic.score(self.totems, maxima=(self.max_x, self.max_y))
 
     def neighbors(self) -> Iterator['SearchNode']:
         for shape in set(self.shapes_left):

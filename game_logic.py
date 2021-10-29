@@ -6,17 +6,19 @@ from game_interface import CoordinatePair, TotemAnswer
 def score(totems: List[TotemAnswer], maxima: Optional[CoordinatePair] = None) -> float:
     if not totems: return 0
     # Note: no need to check mins, should have (0, 0) in there.
-    if maxima:
-        max_x, max_y = maxima
-    else:
-        max_x, max_y = 0, 0
-        for totem in totems:
-            for x, y in totem.coordinates:
-                max_x = max(x, max_x)
-                max_y = max(y, max_y)
+    max_x, max_y = 0, 0
+    for totem in totems:
+        for x, y in totem.coordinates:
+            max_x = max(x, max_x)
+            max_y = max(y, max_y)
+    return fast_score(len(totems), (max_x, max_y))
+
+
+def fast_score(num_totems: int, maxima: CoordinatePair) -> float:
+    max_x, max_y = maxima
     side1 = max_x + 1
     side2 = max_y + 1
-    return (10 * len(totems) - side1 * side2) * min(side1, side2) / max(side1, side2)
+    return (10 * num_totems - side1 * side2) * min(side1, side2) / max(side1, side2)
 
 
 def visualize(totems: List[TotemAnswer]):
