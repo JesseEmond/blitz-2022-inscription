@@ -44,14 +44,12 @@ class Solver:
         shapes = [totem.shape for totem in question.totems]
 
         totems = greedy_strategy.solve(shapes)
-        #totems = astar_strategy.solve(shapes)
+        
         if self.verbose:
             print("Visually:")
             game_logic.visualize(totems)
 
         print(f"Score: {game_logic.score(totems)}")
-        #if self.verbose:
-        #    print(f"Greedy would have given: {game_logic.score(greedy_strategy.solve(shapes))} points.")
         answer = Answer(totems)
         if self.verbose:
             validate(totems)
@@ -59,4 +57,6 @@ class Solver:
             print("Sending Answer:", answer)
         total_time = time.time() - start_time
         print(f"Took {total_time * 1000:.2f} ms.")
+        if self.verbose:
+            print(f"Greedy would have given: {game_logic.score(greedy_strategy.solve(shapes))} points.")
         return answer

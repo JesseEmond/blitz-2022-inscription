@@ -32,3 +32,4 @@ def visualize(totems: List[TotemAnswer]):
     lines = lines[::-1]  # y positive is up
     for line in lines:
         print(''.join(line))
+    print(f"Dims: {max_x+1}x{max_y+1}")
