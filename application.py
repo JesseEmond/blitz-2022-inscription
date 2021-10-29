@@ -9,12 +9,11 @@ from solver import Solver
 
 
 async def run():
-    is_local = "TOKEN" not in os.environ
-    solver = Solver(verbose=is_local)
-    if is_local:
-        await LocalGameClient(solver).run()
-    else:
+    solver = Solver()
+    if "TOKEN" in os.environ:
         await WebSocketGameClient(solver).run()
+    else:
+        await LocalGameClient(solver).run()
 
 
 if __name__ == "__main__":
