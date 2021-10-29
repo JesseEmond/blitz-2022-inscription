@@ -1,8 +1,8 @@
 from typing import List
 
-from game_interface import CoordinatePair, Totem, TotemAnswer
 import game_logic
 import shape_info
+from game_interface import CoordinatePair, Totem, TotemAnswer
 
 
 class Board:
@@ -29,7 +29,9 @@ class Board:
         return game_logic.fast_score(self.n_totems + 1, (max_x, max_y))
 
 
-def place_w_delta(board: Board, totem: List[CoordinatePair], delta: CoordinatePair) -> List[CoordinatePair]:
+def place_w_delta(
+    board: Board, totem: List[CoordinatePair], delta: CoordinatePair
+) -> List[CoordinatePair]:
     """Move 'totem' by 'delta' until it fits on the board."""
     dx, dy = delta
     totem = [[x, y] for x, y in totem]  # list for in-place edits.
@@ -54,7 +56,9 @@ def solve(shapes: List[Totem]) -> List[TotemAnswer]:
     assert shapes
     # The first shape _must_ have (0, 0). For now just decide to use the first variant of shapes[0] that has that.
     totems = []
-    origin_variant = next(variant for variant in shape_info.variants(shapes[0]) if (0, 0) in variant)
+    origin_variant = next(
+        variant for variant in shape_info.variants(shapes[0]) if (0, 0) in variant
+    )
     totems.append(TotemAnswer(shape=shapes[0], coordinates=origin_variant))
     shapes = shapes[1:]
     board = Board()
@@ -69,15 +73,15 @@ def solve(shapes: List[Totem]) -> List[TotemAnswer]:
         best_variant = None
         for shape in set(shapes):
             for variant, (w, h) in shape_info.variants_with_dims(shape):
-                top_variant = [(x, y+board.max_y+1-h) for x, y in variant]
-                right_variant = [(x+board.max_x+1-w, y) for x, y in variant]
+                top_variant = [(x, y + board.max_y + 1 - h) for x, y in variant]
+                right_variant = [(x + board.max_x + 1 - w, y) for x, y in variant]
                 options = [
                     place_above(board, top_variant),
                     place_right(board, top_variant),
-                    place_right(board, [(x, y+1) for x, y in top_variant]),
+                    place_right(board, [(x, y + 1) for x, y in top_variant]),
                     place_right(board, right_variant),
                     place_above(board, right_variant),
-                    place_above(board, [(x+1, y) for x, y in right_variant]),
+                    place_above(board, [(x + 1, y) for x, y in right_variant]),
                 ]
                 for option in options:
                     if any(x < 0 or y < 0 for x, y in option):

@@ -2,11 +2,10 @@ import os
 import time
 from typing import List
 
-from game_interface import Answer, GameMessage, Totem, TotemAnswer
-import game_logic
-
 import astar_strategy
+import game_logic
 import greedy_strategy
+from game_interface import Answer, GameMessage, Totem, TotemAnswer
 
 
 def validate(totems: List[TotemAnswer]):
@@ -30,7 +29,9 @@ def validate(totems: List[TotemAnswer]):
 
 class Solver:
     def __init__(self):
-        verbose = "TOKEN" not in os.environ  # Ideally should pass this down, but I don't get logs then for some reason.
+        verbose = (
+            "TOKEN" not in os.environ
+        )  # Ideally should pass this down, but I don't get logs then for some reason.
         print(f"Running with verbosity: {verbose}")
         self.verbose = verbose
 
@@ -44,7 +45,7 @@ class Solver:
         shapes = [totem.shape for totem in question.totems]
 
         totems = greedy_strategy.solve(shapes)
-        
+
         if self.verbose:
             print("Visually:")
             game_logic.visualize(totems)
@@ -58,5 +59,7 @@ class Solver:
         total_time = time.time() - start_time
         print(f"Took {total_time * 1000:.2f} ms.")
         if self.verbose:
-            print(f"Greedy would have given: {game_logic.score(greedy_strategy.solve(shapes))} points.")
+            print(
+                f"Greedy would have given: {game_logic.score(greedy_strategy.solve(shapes))} points."
+            )
         return answer
