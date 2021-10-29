@@ -37,7 +37,7 @@ class Solver:
     def get_answer(self, game_message: GameMessage) -> Answer:
         start_time = time.time()
         question = game_message.payload
-        if self.verbose:
+        if self.verbose and len(question.totems) <= 25:
             print("Received Question:", question)
         else:
             print(f"Received question with {len(question.totems)} totems.")
@@ -55,7 +55,7 @@ class Solver:
         answer = Answer(totems)
         if self.verbose:
             validate(totems)
-        if self.verbose:
+        if self.verbose and len(totems) <= 25:
             print("Sending Answer:", answer)
         total_time = time.time() - start_time
         print(f"Took {total_time * 1000:.2f} ms.")
