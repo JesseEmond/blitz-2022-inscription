@@ -3,7 +3,7 @@ from typing import List, Optional
 from game_interface import CoordinatePair, TotemAnswer
 
 
-def score(totems: List[TotemAnswer], maxima: Optional[CoordinatePair] = None) -> float:
+def score(totems: List[TotemAnswer]) -> float:
     if not totems:
         return 0
     # Note: no need to check mins, should have (0, 0) in there.

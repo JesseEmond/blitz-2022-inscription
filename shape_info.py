@@ -43,10 +43,7 @@ SHAPE_VARIANTS = {
         parse_shape(" SS", "SS "),
     ],
     "Z": [
-        parse_shape(
-            "ZZ ",
-            " ZZ",
-        ),
+        parse_shape("ZZ ", " ZZ"),
         parse_shape(" Z", "ZZ", "Z "),
     ],
     "O": [
