@@ -1,4 +1,5 @@
 import math
+import numpy as np
 from typing import Iterator, List, Optional
 
 from game_interface import CoordinatePair, Totem, TotemAnswer
@@ -15,7 +16,7 @@ def tiles_around(pos: CoordinatePair) -> Iterator[CoordinatePair]:
 class Board:
     def __init__(self, size):
         self.size = size
-        self.grid = [[False for _ in range(size)] for _ in range(size)]
+        self.grid = np.zeros((size, size), dtype=bool)
         self.n_touchpoints = [[0 for _ in range(size)] for _ in range(size)]
         for x in range(size):
             self.n_touchpoints[0][x] += 1
@@ -45,7 +46,11 @@ class Board:
 
     def fits(self, totem: List[CoordinatePair]):
         """Would 'totem' fit in the grid?"""
-        return all(self.is_empty_tile(pos) for pos in totem)
+        mask = np.zeros((self.size, self.size), dtype=bool)
+        for x, y in totem:
+            mask[y][x] = True
+        return not (self.grid & mask).any()
+        #return all(self.is_empty_tile(pos) for pos in totem)
 
     def is_empty_tile(self, pos: CoordinatePair):
         x, y = pos
@@ -93,8 +98,10 @@ def try_fit(board: Board, shapes: List[Totem]) -> Optional[TotemAnswer]:
         for shape in set(shapes):
             for variant, (w, h) in shape_info.variants_with_dims(shape):
                 for dx in range(board.size - w + 1):
+                    if any(board.smallest_unset_at_x[x+dx] + y >= board.size - 1 for x, y in variant):
+                        continue
                     # Simulate a piece falling down
-                    min_height = max(board.smallest_unset_at_x[x+dx]-y for x, y in variant)
+                    min_height = max(board.smallest_unset_at_x[x+dx] for x, y in variant)
                     placed = place_above(board, [(x+dx, y+min_height) for x, y in variant])
                     if placed:
                         touchpoints = board.touchpoints(placed)
