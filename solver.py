@@ -5,6 +5,7 @@ from typing import List
 import astar_strategy
 import game_logic
 import greedy_strategy
+import js_strategy
 from game_interface import Answer, GameMessage, Totem, TotemAnswer
 
 
@@ -44,7 +45,7 @@ class Solver:
             print(f"Received question with {len(question.totems)} totems.")
         shapes = [totem.shape for totem in question.totems]
 
-        totems = greedy_strategy.solve(shapes)
+        totems = js_strategy.solve(shapes)
 
         if self.verbose:
             print("Visually:")
@@ -59,7 +60,12 @@ class Solver:
         total_time = time.time() - start_time
         print(f"Took {total_time * 1000:.2f} ms.")
         if self.verbose:
-            print(
-                f"Greedy would have given: {game_logic.score(greedy_strategy.solve(shapes))} points."
-            )
+            solvers = {
+                "Greedy": greedy_strategy,
+                "JS": js_strategy,
+            }
+            for key, value in solvers.items():
+                print(
+                    f"{key} would have given: {game_logic.score(value.solve(shapes))} points."
+                )
         return answer
