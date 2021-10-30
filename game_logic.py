@@ -23,14 +23,17 @@ def fast_score(num_totems: int, maxima: CoordinatePair) -> float:
 
 
 def visualize(totems: List[TotemAnswer]):
-    assert totems
-    max_x = max(x for totem in totems for x, _ in totem.coordinates)
-    max_y = max(y for totem in totems for _, y in totem.coordinates)
-    lines = [["." for _ in range(max_x + 1)] for _ in range(max_y + 1)]
-    for totem in totems:
-        for x, y in totem.coordinates:
-            lines[y][x] = totem.shape
-    lines = lines[::-1]  # y positive is up
-    for line in lines:
-        print("".join(line))
+    if totems:
+        max_x = max(x for totem in totems for x, _ in totem.coordinates)
+        max_y = max(y for totem in totems for _, y in totem.coordinates)
+        lines = [["." for _ in range(max_x + 1)] for _ in range(max_y + 1)]
+        for totem in totems:
+            for x, y in totem.coordinates:
+                lines[y][x] = totem.shape
+        lines = lines[::-1]  # y positive is up
+        for line in lines:
+            print("".join(line))
+    else:
+        print("(empty)")
+        max_x, max_y = -1, -1
     print(f"Dims: {max_x+1}x{max_y+1}")

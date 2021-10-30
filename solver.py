@@ -2,9 +2,9 @@ import os
 import time
 from typing import List
 
-import astar_strategy
 import game_logic
 import greedy_strategy
+import jesse_strategy
 import js_strategy
 from game_interface import Answer, GameMessage, Totem, TotemAnswer
 
@@ -17,13 +17,17 @@ def validate(totems: List[TotemAnswer]):
         for x, y in totem.coordinates:
             if (x, y) in coords:
                 print("INVALID")
-                print(f"Duplicate coords: {(x, y)}")
+                print(f"!!! Duplicate coords: {(x, y)}")
                 ok = False
             if x < 0 or y < 0:
                 print("INVALID")
-                print(f"Negative coords: {(x, y)}")
+                print(f"!!! Negative coords: {(x, y)}")
                 ok = False
             coords.add((x, y))
+    if (0, 0) not in coords:
+        ok = False
+        print("INVALID")
+        print("!!! (0,0) missing from solution")
     if ok:
         print("OK")
 
@@ -45,7 +49,7 @@ class Solver:
             print(f"Received question with {len(question.totems)} totems.")
         shapes = [totem.shape for totem in question.totems]
 
-        totems = js_strategy.solve(shapes)
+        totems = jesse_strategy.solve(shapes)
 
         if self.verbose:
             print("Visually:")
@@ -63,6 +67,7 @@ class Solver:
             solvers = {
                 "Greedy": greedy_strategy,
                 "JS": js_strategy,
+                "Jesse": jesse_strategy,
             }
             for key, value in solvers.items():
                 print(
