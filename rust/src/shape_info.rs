@@ -198,4 +198,15 @@ impl ShapeVariant {
     pub fn get_rotations(totem: &Totem) -> &'static [ShapeVariant] {
         VARIANTS[*totem as usize]
     }
+
+    // Minimum (w, h) needed for this totem (based on its rotation with smallest width).
+    pub fn minimum_dims(totem: &Totem) -> (usize, usize) {
+        let mut dims = (5, 5);  // all shapes are smaller than this
+        for rotation in ShapeVariant::get_rotations(totem) {
+            if rotation.width < dims.0 {
+                dims = (rotation.width, rotation.height);
+            }
+        }
+        dims
+    }
 }

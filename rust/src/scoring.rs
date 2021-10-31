@@ -31,7 +31,9 @@ fn get_all_dims(num_totems: usize) -> Vec<Dims> {
         }
         let other_side = (n_squares as f64 / len as f64).ceil() as usize;
         assert!(len * other_side >= n_squares);
-        dims.insert((len, other_side));
+        let short = cmp::min(len, other_side);
+        let long = cmp::max(len, other_side);
+        dims.insert((short, long));
     }
     Vec::from_iter(dims)
 }

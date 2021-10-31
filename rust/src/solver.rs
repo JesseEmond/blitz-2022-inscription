@@ -1,32 +1,36 @@
 use crate::{
     game_interface::{Answer, GameMessage, Question, Totem, TotemAnswer},
-    scoring::{score, OptimalDimensions},
+    scoring::{score, Dims, OptimalDimensions},
     shape_info::ShapeVariant,
 };
 use std::{error::Error, cmp, time::Instant};
 
 struct Board {
-    size: usize,
+    width: usize,
+    height: usize,
     grid: Vec<Vec<bool>>,
     touchpoints: Vec<Vec<u32>>,
     totems: Vec<TotemAnswer>,
 }
 
 impl Board {
-    fn new(size: usize, answer_size: usize) -> Board {
-        let grid = vec![vec![false; size]; size];
-        let mut touchpoints = vec![vec![0; size]; size];
+    fn new(width: usize, height: usize, answer_size: usize) -> Board {
+        let grid = vec![vec![false; width]; height];
+        let mut touchpoints = vec![vec![0; width]; height];
         // Treat borders as touchpoints
-        for i in 0..size {
-            touchpoints[0][i] += 1;
-            touchpoints[size - 1][i] += 1;
-            touchpoints[i][0] += 1;
-            touchpoints[i][size - 1] += 1;
+        for x in 0..width {
+            touchpoints[0][x] += 1;
+            touchpoints[height - 1][x] += 1;
+        }
+        for y in 0..height {
+            touchpoints[y][0] += 1;
+            touchpoints[y][width - 1] += 1;
         }
         touchpoints[0][0] += 1; // Give (0,0) a boost to ensure we set it.
                                 // TODO "smallest unset at x"
         Board {
-            size,
+            width,
+            height,
             grid,
             touchpoints,
             totems: Vec::with_capacity(answer_size),
@@ -40,13 +44,13 @@ impl Board {
             if *y > 0 {
                 self.touchpoints[*y - 1][*x] += 1;
             }
-            if *y + 1 < self.size {
+            if *y + 1 < self.height {
                 self.touchpoints[*y + 1][*x] += 1;
             }
             if *x > 0 {
                 self.touchpoints[*y][*x - 1] += 1;
             }
-            if *x + 1 < self.size {
+            if *x + 1 < self.width {
                 self.touchpoints[*y][*x + 1] += 1;
             }
         }
@@ -56,7 +60,7 @@ impl Board {
 
     fn fits(&self, shape: &ShapeVariant) -> Option<bool> {
         for (x, y) in &shape.coords {
-            if *x >= self.size || *y >= self.size {
+            if *x >= self.width || *y >= self.height {
                 return None;
             }
             if self.grid[*y][*x] {
@@ -94,7 +98,7 @@ impl Board {
 
 type ShapeDist = [usize; 7];
 
-fn try_fit(board: &mut Board, mut dist: ShapeDist) -> Option<Vec<TotemAnswer>> {
+fn try_gravity_greedy_fit(board: &mut Board, mut dist: ShapeDist) -> Option<Vec<TotemAnswer>> {
     loop {
         let mut best_shape: Option<ShapeVariant> = None;
         let mut best_touchpoints: u32 = 0;
@@ -104,10 +108,10 @@ fn try_fit(board: &mut Board, mut dist: ShapeDist) -> Option<Vec<TotemAnswer>> {
             shapes_left += n_totem;
             if n_totem > 0 {
                 for variant in ShapeVariant::get_rotations(totem) {
-                    for dx in 0..(board.size + 1 - variant.width) {
+                    for dx in 0..(board.width as i32 + 1 - variant.width as i32) {
                         let mut variant = variant.clone();
                         for point in &mut variant.coords {
-                            point.0 += dx;
+                            point.0 += dx as usize;
                         }
                         if board.move_first_fit_above(&mut variant) {
                             let touchpoints = board.num_touchpoints(&variant);
@@ -133,18 +137,39 @@ fn try_fit(board: &mut Board, mut dist: ShapeDist) -> Option<Vec<TotemAnswer>> {
     }
 }
 
-fn solve_greedy(question: &Question) -> Vec<TotemAnswer> {
+fn min_dimensions_needed(dist: &ShapeDist) -> Dims {
+    let mut dims = (0, 0);
+    for totem in Totem::iter() {
+        if dist[*totem as usize] > 0 {
+            let dim = ShapeVariant::minimum_dims(totem);
+            dims.0 = cmp::max(dims.0, dim.0);
+            dims.1 = cmp::max(dims.1, dim.1);
+        }
+    }
+    dims
+}
+
+fn solve_greedy(question: &Question, level: usize,
+                optimal_dims: &OptimalDimensions) -> Vec<TotemAnswer> {
     let dist = get_shape_distribution(question);
+    let min_dims = min_dimensions_needed(&dist);
     let answer_size = question.totems.len();
-    let n_squares = answer_size * 4;
-    let mut side = cmp::max((n_squares as f64).sqrt().ceil() as usize, 4);
-    loop {
-        println!("Trying {0}x{0}...", side);
-        if let Some(fit) = try_fit(&mut Board::new(side, answer_size), dist) {
+    for (w, h) in optimal_dims.level_dims(level) {
+        // Note: implicit assumption here that optimal_dims have the shortest dim first,
+        // and that min_dimensions_needed does so based on minimal width
+        if min_dims.0 > *w || min_dims.1 > *h {
+            println!("Skipping {}x{} (would have given {}), could not fit {}x{} totem",
+                     *w, *h, score(answer_size, *w, *h), min_dims.0, min_dims.1);
+            continue;
+        }
+        println!("Trying {}x{}... would give {}", *w, *h, score(answer_size, *w, *h));
+        if let Some(fit) = try_gravity_greedy_fit(&mut Board::new(*w, *h, answer_size), dist) {
             return fit;
         }
-        side += 1;
     }
+    println!("!!! FAILED TO FIND SOLUTION. Should increase ranges in 'optimal dims'.");
+    // If we can't find a solution with a 4*totem x 4*totem grid....
+    try_gravity_greedy_fit(&mut Board::new(4*answer_size, 4*answer_size, answer_size), dist).unwrap()
 }
 
 #[cfg(feature = "visualize")]
@@ -208,7 +233,7 @@ impl Solver {
         #[cfg(feature = "timing")]
         let now = Instant::now();
 
-        let solution = solve_greedy(question);
+        let solution = solve_greedy(question, inferred_level, &self.optimal_dims);
 
 
         #[cfg(feature = "visualize")]
