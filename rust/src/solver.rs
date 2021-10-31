@@ -132,7 +132,7 @@ fn try_fit(board: &mut Board, mut dist: ShapeDist) -> Option<Vec<TotemAnswer>> {
     }
 }
 
-fn solve(question: &Question) -> Vec<TotemAnswer> {
+fn solve_greedy(question: &Question) -> Vec<TotemAnswer> {
     let dist = get_shape_distribution(question);
     let answer_size = question.totems.len();
     let n_squares = answer_size * 4;
@@ -144,6 +144,11 @@ fn solve(question: &Question) -> Vec<TotemAnswer> {
         }
         side += 1;
     }
+}
+
+fn score(num_totems: usize, width: usize, height: usize) -> f32 {
+    (10 * num_totems - width * height) as f32 *
+    cmp::min(width, height) as f32 / cmp::max(width, height) as f32
 }
 
 #[cfg(feature = "visualize")]
@@ -171,6 +176,7 @@ fn visualize(answer: &[TotemAnswer]) {
         }
         println!();
     }
+    println!("{}x{}, score={}", w, h, score(answer.len(), w, h));
 }
 
 fn get_shape_distribution(question: &Question) -> ShapeDist {
@@ -203,7 +209,7 @@ impl Solver {
         #[cfg(feature = "timing")]
         let now = Instant::now();
 
-        let solution = solve(question);
+        let solution = solve_greedy(question);
 
         #[cfg(feature = "timing")]
         println!("Took: {}ms", now.elapsed().as_millis());
