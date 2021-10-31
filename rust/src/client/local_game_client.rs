@@ -1,8 +1,12 @@
+use crate::{
+    game_interface::{GameMessage, Question, Totem, TotemQuestion},
+    solver::Solver,
+};
+use rand::{
+    self,
+    distributions::{Distribution, Uniform},
+};
 use std::env;
-use rand;
-use rand::distributions::{Distribution, Uniform};
-use crate::solver::Solver;
-use crate::game_interface::{GameMessage, Question, Totem, TotemQuestion};
 
 pub struct LocalGameClient {
     solver: Solver,
@@ -24,13 +28,18 @@ impl LocalGameClient {
         let mut questions: Vec<TotemQuestion> = Vec::new();
         let die = Uniform::from(0..7);
         for _ in 0..n_totems {
-            let idx = die.sample(&mut rng);
-            let totem = [Totem::I, Totem::J, Totem::L, Totem::O, Totem::T, Totem::S, Totem::Z][idx];
-            questions.push(TotemQuestion { shape: totem });
+            let idx: usize = die.sample(&mut rng);
+            let shape: Totem = unsafe { std::mem::transmute(idx) };
+            questions.push(TotemQuestion { shape });
         }
         let question = Question { totems: questions };
-        let game_message = GameMessage { tick: 1, payload: question };
+        let game_message = GameMessage {
+            tick: 1,
+            payload: question,
+        };
 
-        self.solver.get_answer(&game_message).expect("There was an error in the solver's code!");
+        self.solver
+            .get_answer(&game_message)
+            .expect("There was an error in the solver's code!");
     }
 }

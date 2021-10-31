@@ -1,3 +1,8 @@
-__pycache__
+*.profdata
+*.zip
+.vim/
 .vscode
-/venv
+__pycache__
+callgrind.out.*
+target/
+venv/

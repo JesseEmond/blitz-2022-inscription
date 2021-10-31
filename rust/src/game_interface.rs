@@ -1,14 +1,30 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Hash, Copy, Clone)]
+#[repr(usize)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Hash, Copy, Clone, Debug)]
 pub enum Totem {
-    I,
-    O,
+    I = 0,
     J,
     L,
+    O,
     S,
-    Z,
     T,
+    Z,
+}
+
+impl Totem {
+    pub fn iter() -> std::slice::Iter<'static, Totem> {
+        static TOTEMS: [Totem; 7] = [
+            Totem::I,
+            Totem::J,
+            Totem::L,
+            Totem::O,
+            Totem::S,
+            Totem::T,
+            Totem::Z,
+        ];
+        TOTEMS.iter()
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -21,7 +37,7 @@ pub struct Question {
     pub totems: Vec<TotemQuestion>,
 }
 
-pub type CoordinatePair = (i32, i32);
+pub type CoordinatePair = (usize, usize);
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TotemAnswer {
