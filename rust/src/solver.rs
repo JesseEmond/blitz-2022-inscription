@@ -1,5 +1,6 @@
 use crate::{
     game_interface::{Answer, GameMessage, Question, Totem, TotemAnswer},
+    scoring::{score, OptimalDimensions},
     shape_info::ShapeVariant,
 };
 use std::{error::Error, cmp, time::Instant};
@@ -146,11 +147,6 @@ fn solve_greedy(question: &Question) -> Vec<TotemAnswer> {
     }
 }
 
-fn score(num_totems: usize, width: usize, height: usize) -> f32 {
-    (10 * num_totems - width * height) as f32 *
-    cmp::min(width, height) as f32 / cmp::max(width, height) as f32
-}
-
 #[cfg(feature = "visualize")]
 fn visualize(answer: &[TotemAnswer]) {
     static GLYPHS: [char; 7] = ['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
@@ -177,6 +173,7 @@ fn visualize(answer: &[TotemAnswer]) {
         println!();
     }
     println!("{}x{}, score={}", w, h, score(answer.len(), w, h));
+
 }
 
 fn get_shape_distribution(question: &Question) -> ShapeDist {
@@ -187,35 +184,38 @@ fn get_shape_distribution(question: &Question) -> ShapeDist {
     dist
 }
 
-pub struct Solver {}
+pub struct Solver {
+    optimal_dims: OptimalDimensions,
+}
 
 impl Solver {
     /// Initialize your solver
-    ///
-    /// This method should be used to initialize some
-    /// variables you will need throughout the challenge.
     pub fn new() -> Self {
-        Solver {}
+        Solver { optimal_dims: OptimalDimensions::new() }
     }
 
     /// Answer the question
-    ///
-    /// This is where the magic happens, for now the
-    /// answer is a single 'I'. I bet you can do better ;)
     pub fn get_answer(&self, game_message: &GameMessage) -> Result<Answer, Box<dyn Error>> {
         let question = &game_message.payload;
-        println!("Received question with {} totems.", question.totems.len());
+        let num_totems = question.totems.len();
+        println!("Received question with {} totems.", num_totems);
+
+        let inferred_level = (num_totems as f64).log2().ceil() as usize;
+        let (optimal_w, optimal_h) = self.optimal_dims.level_dims(inferred_level).next().unwrap();
+        println!("Optimal dims for level {} would be {}x{}, which would give score {}",
+                 inferred_level + 1, optimal_w, optimal_h, score(num_totems, *optimal_w, *optimal_h));
 
         #[cfg(feature = "timing")]
         let now = Instant::now();
 
         let solution = solve_greedy(question);
 
-        #[cfg(feature = "timing")]
-        println!("Took: {}ms", now.elapsed().as_millis());
 
         #[cfg(feature = "visualize")]
         visualize(&solution);
+
+        #[cfg(feature = "timing")]
+        println!("Took: {}ms", now.elapsed().as_millis());
 
         let answer = Answer::new(solution);
 

@@ -4,6 +4,7 @@ use std::env;
 
 mod client;
 mod game_interface;
+mod scoring;
 mod shape_info;
 mod solver;
 
