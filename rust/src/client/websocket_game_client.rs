@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use futures_util::{SinkExt, StreamExt};
 use serde_json::{json, Value};
 use tokio_tungstenite::connect_async;
@@ -6,18 +8,24 @@ use tokio_tungstenite::tungstenite::Message;
 use crate::game_interface::GameMessage;
 use crate::solver::Solver;
 
-pub struct WebSocketGameClient {
-    solver: Solver,
+pub struct WebSocketGameClient<S>
+where
+    S: Solver,
+{
     uri: String,
     token: String,
+    _solver: PhantomData<S>,
 }
 
-impl WebSocketGameClient {
-    pub fn new(solver: Solver, token: String) -> Self {
+impl<S> WebSocketGameClient<S>
+where
+    S: Solver,
+{
+    pub fn new(token: String) -> Self {
         WebSocketGameClient {
-            solver,
             uri: "ws://127.0.0.1:8765".to_string(),
             token,
+            _solver: PhantomData,
         }
     }
 
@@ -54,10 +62,8 @@ impl WebSocketGameClient {
 
                 let game_message: GameMessage = serde_json::from_value(parsed)
                     .expect("The server sent a game message that could not be parsed");
-                let answer = self
-                    .solver
-                    .get_answer(&game_message)
-                    .expect("There was an error in the solver's code!");
+
+                let answer = S::solve(&game_message.payload);
 
                 let response =
                     json!({"type": "COMMAND", "tick": game_message.tick, "actions": answer});

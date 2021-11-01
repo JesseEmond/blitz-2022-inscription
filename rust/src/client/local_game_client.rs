@@ -6,15 +6,23 @@ use rand::{
     self,
     distributions::{Distribution, Uniform},
 };
-use std::env;
+use std::{env, marker::PhantomData};
 
-pub struct LocalGameClient {
-    solver: Solver,
+pub struct LocalGameClient<S>
+where
+    S: Solver,
+{
+    _solver: PhantomData<S>,
 }
 
-impl LocalGameClient {
-    pub fn new(solver: Solver) -> Self {
-        LocalGameClient { solver }
+impl<S> LocalGameClient<S>
+where
+    S: Solver,
+{
+    pub fn new() -> Self {
+        Self {
+            _solver: PhantomData,
+        }
     }
 
     pub async fn run(&self) {
@@ -38,8 +46,6 @@ impl LocalGameClient {
             payload: question,
         };
 
-        self.solver
-            .get_answer(&game_message)
-            .expect("There was an error in the solver's code!");
+        S::solve(&game_message.payload);
     }
 }

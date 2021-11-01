@@ -1,12 +1,14 @@
 use crate::client::{LocalGameClient, WebSocketGameClient};
-use crate::solver::Solver;
 use std::env;
 
 mod client;
 mod game_interface;
+mod greedy_solver;
 mod scoring;
 mod shape_info;
 mod solver;
+
+type SelectedSolver = greedy_solver::GreedySolver;
 
 #[tokio::main]
 async fn main() {
@@ -18,10 +20,11 @@ async fn main() {
         env!("CARGO_CFG_TARGET_FEATURE"),
     );
 
-    let solver = Solver::new();
     if let Ok(token) = env::var("TOKEN") {
-        WebSocketGameClient::new(solver, token).run().await;
+        WebSocketGameClient::<SelectedSolver>::new(token)
+            .run()
+            .await;
     } else {
-        LocalGameClient::new(solver).run().await;
+        LocalGameClient::<SelectedSolver>::new().run().await;
     }
 }
