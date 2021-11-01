@@ -37,22 +37,25 @@ fn get_all_dims(num_totems: usize) -> Vec<Dims> {
 // Helper to get an optimal list of dimensions for a given number of totems, to maximize score.
 pub struct OptimalDimensions {
     // Ordered list of dimensions to consider, per level.
-    level_dims: [Vec<Dims>; 10],
+    level_dims: Vec<Vec<Dims>>,
 }
 
 impl OptimalDimensions {
     pub fn new() -> Self {
-        let mut level_dims: [Vec<Dims>; 10] = Default::default();
-        for level in 0..10 {
-            let num_totems: usize = 1 << level;
-            let mut all_dims = get_all_dims(num_totems);
-            all_dims.sort_by_key(|(w, h)| cmp::Reverse(OrderedFloat(score(num_totems, *w, *h))));
-            level_dims[level] = all_dims;
-        }
+        let level_dims = (0..10_usize)
+            .into_iter()
+            .map(|level| {
+                let num_totems = 1 << level;
+                let mut all_dims = get_all_dims(num_totems);
+                all_dims
+                    .sort_by_key(|(w, h)| cmp::Reverse(OrderedFloat(score(num_totems, *w, *h))));
+                all_dims
+            })
+            .collect();
         OptimalDimensions { level_dims }
     }
 
-    pub fn level_dims(&self, level: usize) -> std::slice::Iter<Dims> {
-        self.level_dims[level].iter()
+    pub fn level_dims(&self, level: usize) -> &[Dims] {
+        &self.level_dims[level]
     }
 }

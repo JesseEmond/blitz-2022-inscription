@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+pub const TOTEM_COUNT: usize = 7;
+
 #[repr(usize)]
 #[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Hash, Copy, Clone, Debug)]
 pub enum Totem {
@@ -14,7 +16,7 @@ pub enum Totem {
 
 impl Totem {
     pub fn iter() -> std::slice::Iter<'static, Totem> {
-        static TOTEMS: [Totem; 7] = [
+        static TOTEMS: [Totem; TOTEM_COUNT] = [
             Totem::I,
             Totem::J,
             Totem::L,
@@ -32,9 +34,21 @@ pub struct TotemQuestion {
     pub shape: Totem,
 }
 
+pub type TotemBag = [usize; TOTEM_COUNT];
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Question {
     pub totems: Vec<TotemQuestion>,
+}
+
+impl Question {
+    pub fn get_totem_bag(&self) -> TotemBag {
+        let mut bag = [0; TOTEM_COUNT];
+        for totem in &self.totems {
+            bag[totem.shape as usize] += 1;
+        }
+        bag
+    }
 }
 
 pub type CoordinatePair = (usize, usize);

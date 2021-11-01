@@ -1,4 +1,3 @@
-use crate::client::{LocalGameClient, WebSocketGameClient};
 use std::env;
 
 mod client;
@@ -7,6 +6,8 @@ mod greedy_solver;
 mod scoring;
 mod shape_info;
 mod solver;
+
+use client::{LocalGameClient, WebSocketGameClient};
 
 type SelectedSolver = greedy_solver::GreedySolver;
 

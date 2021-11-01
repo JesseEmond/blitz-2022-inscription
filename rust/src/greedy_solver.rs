@@ -1,10 +1,10 @@
 use crate::{
-    game_interface::{Answer, Question, Totem, TotemAnswer},
+    game_interface::{Answer, Question, Totem, TotemAnswer, TotemBag},
     scoring::{score, OptimalDimensions},
     shape_info::ShapeVariant,
-    solver::Solver,
+    solver::{macros::solver_boilerplate, Solver},
 };
-use std::{cmp, time::Instant};
+use std::cmp;
 
 struct Board {
     size: usize,
@@ -93,9 +93,7 @@ impl Board {
     }
 }
 
-type ShapeDist = [usize; 7];
-
-fn try_fit(board: &mut Board, mut dist: ShapeDist) -> Option<Vec<TotemAnswer>> {
+fn try_fit(board: &mut Board, mut dist: TotemBag) -> Option<Vec<TotemAnswer>> {
     loop {
         let mut best_shape: Option<ShapeVariant> = None;
         let mut best_touchpoints: u32 = 0;
@@ -135,7 +133,7 @@ fn try_fit(board: &mut Board, mut dist: ShapeDist) -> Option<Vec<TotemAnswer>> {
 }
 
 fn solve_greedy(question: &Question) -> Vec<TotemAnswer> {
-    let dist = get_shape_distribution(question);
+    let dist = question.get_totem_bag();
     let answer_size = question.totems.len();
     let n_squares = answer_size * 4;
     let mut side = cmp::max((n_squares as f64).sqrt().ceil() as usize, 4);
@@ -146,42 +144,6 @@ fn solve_greedy(question: &Question) -> Vec<TotemAnswer> {
         }
         side += 1;
     }
-}
-
-#[cfg(feature = "visualize")]
-fn visualize(answer: &[TotemAnswer]) {
-    static GLYPHS: [char; 7] = ['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
-    let mut max_x = 0;
-    let mut max_y = 0;
-    for totem in answer {
-        for (x, y) in &totem.coordinates {
-            max_x = std::cmp::max(max_x, *x);
-            max_y = std::cmp::max(max_y, *y);
-        }
-    }
-    let w = max_x + 1;
-    let h = max_y + 1;
-    let mut lines = vec![vec!['.'; w as usize]; h as usize];
-    for totem in answer {
-        for (x, y) in &totem.coordinates {
-            lines[*y][*x] = GLYPHS[totem.shape as usize];
-        }
-    }
-    for line in lines.iter().rev() {
-        for c in line {
-            print!("{}", c);
-        }
-        println!();
-    }
-    println!("{}x{}, score={}", w, h, score(answer.len(), w, h));
-}
-
-fn get_shape_distribution(question: &Question) -> ShapeDist {
-    let mut dist: ShapeDist = [0; 7];
-    for totem in &question.totems {
-        dist[totem.shape as usize] += 1;
-    }
-    dist
 }
 
 pub struct GreedySolver {
@@ -202,32 +164,18 @@ impl GreedySolver {
         println!("Received question with {} totems.", num_totems);
 
         let inferred_level = (num_totems as f64).log2().ceil() as usize;
-        let (optimal_w, optimal_h) = self.optimal_dims.level_dims(inferred_level).next().unwrap();
+        let (optimal_w, optimal_h) = self.optimal_dims.level_dims(inferred_level)[0];
         println!(
             "Optimal dims for level {} would be {}x{}, which would give score {}",
             inferred_level + 1,
             optimal_w,
             optimal_h,
-            score(num_totems, *optimal_w, *optimal_h)
+            score(num_totems, optimal_w, optimal_h)
         );
 
-        #[cfg(feature = "timing")]
-        let now = Instant::now();
-
-        let solution = solve_greedy(&question);
-
-        #[cfg(feature = "timing")]
-        let elapsed = now.elapsed().as_millis();
-
-        #[cfg(feature = "visualize")]
-        visualize(&solution);
-
-        #[cfg(feature = "timing")]
-        println!("Took: {}ms", elapsed);
-
-        let answer = Answer::new(solution);
-
-        answer
+        solver_boilerplate! {
+            Answer::new(solve_greedy(&question))
+        }
     }
 }
 
