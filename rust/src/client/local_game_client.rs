@@ -23,7 +23,7 @@ impl LocalGameClient {
         let mut rng = rand::thread_rng();
         let n_totems = match env::var("TOTEMS") {
             Ok(val) => val.parse().unwrap(),
-            Err(_) => 8,
+            Err(_) => 8,  // TODO: if unset, check all levels
         };
         let mut questions: Vec<TotemQuestion> = Vec::new();
         let die = Uniform::from(0..7);
@@ -41,5 +41,7 @@ impl LocalGameClient {
         self.solver
             .get_answer(&game_message)
             .expect("There was an error in the solver's code!");
+
+        // TODO: validate solution
     }
 }

@@ -3,6 +3,7 @@ use crate::solver::Solver;
 use std::env;
 
 mod client;
+mod exact_solver;
 mod game_interface;
 mod scoring;
 mod shape_info;

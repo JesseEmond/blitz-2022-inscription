@@ -37,6 +37,7 @@ pub struct Question {
     pub totems: Vec<TotemQuestion>,
 }
 
+// TODO: try u8s?
 pub type CoordinatePair = (usize, usize);
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

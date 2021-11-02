@@ -1,5 +1,7 @@
 use crate::game_interface::{CoordinatePair, Totem};
 
+pub type ShapeDist = [usize; 7];
+
 const I_VARIANTS: [ShapeVariant; 2] = [
     // IIII
     ShapeVariant {
@@ -190,8 +192,8 @@ const VARIANTS: [&[ShapeVariant]; 7] = [
 pub struct ShapeVariant {
     pub shape: Totem,
     pub coords: [CoordinatePair; 4],
-    pub width: usize,
-    pub height: usize,
+    pub width: u8,
+    pub height: u8,
 }
 
 impl ShapeVariant {
@@ -203,10 +205,24 @@ impl ShapeVariant {
     pub fn minimum_dims(totem: &Totem) -> (usize, usize) {
         let mut dims = (5, 5);  // all shapes are smaller than this
         for rotation in ShapeVariant::get_rotations(totem) {
-            if rotation.width < dims.0 {
-                dims = (rotation.width, rotation.height);
+            if (rotation.width as usize) < dims.0 {
+                dims = (rotation.width as usize, rotation.height as usize);
             }
         }
         dims
+    }
+
+    pub fn offset_by(&self, x: usize, y: usize) -> ShapeVariant {
+        let mut coords = self.coords.clone();
+        for (dx, dy) in &mut coords {
+            *dx += x;
+            *dy += y;
+        }
+        ShapeVariant {
+            shape: self.shape,
+            coords: coords,
+            width: self.width,
+            height: self.height,
+        }
     }
 }

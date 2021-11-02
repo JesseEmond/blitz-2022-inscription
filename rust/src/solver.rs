@@ -1,7 +1,8 @@
 use crate::{
+    exact_solver,
     game_interface::{Answer, GameMessage, Question, Totem, TotemAnswer},
     scoring::{score, Dims, OptimalDimensions},
-    shape_info::ShapeVariant,
+    shape_info::{ShapeDist, ShapeVariant},
 };
 use std::{error::Error, cmp, time::Instant};
 
@@ -27,7 +28,6 @@ impl Board {
             touchpoints[y][width - 1] += 1;
         }
         touchpoints[0][0] += 1; // Give (0,0) a boost to ensure we set it.
-                                // TODO "smallest unset at x"
         Board {
             width,
             height,
@@ -40,7 +40,6 @@ impl Board {
     fn mark(&mut self, shape: &ShapeVariant) {
         for (x, y) in &shape.coords {
             self.grid[*y][*x] = true;
-            // TODO: update "smallest unset at x"
             if *y > 0 {
                 self.touchpoints[*y - 1][*x] += 1;
             }
@@ -96,8 +95,6 @@ impl Board {
     }
 }
 
-type ShapeDist = [usize; 7];
-
 fn try_gravity_greedy_fit(board: &mut Board, mut dist: ShapeDist) -> Option<Vec<TotemAnswer>> {
     loop {
         let mut best_shape: Option<ShapeVariant> = None;
@@ -149,8 +146,16 @@ fn min_dimensions_needed(dist: &ShapeDist) -> Dims {
     dims
 }
 
-fn solve_greedy(question: &Question, level: usize,
-                optimal_dims: &OptimalDimensions) -> Vec<TotemAnswer> {
+fn do_solve(width: usize, height: usize, num_totems: usize, dist: &ShapeDist, greedy: bool) -> Option<Vec<TotemAnswer>> {
+    if greedy {
+        try_gravity_greedy_fit(&mut Board::new(width, height, num_totems), *dist)
+    } else {
+        exact_solver::solve(width, height, *dist)
+    }
+}
+
+fn solve(question: &Question, level: usize,
+         optimal_dims: &OptimalDimensions, greedy: bool) -> Vec<TotemAnswer> {
     let dist = get_shape_distribution(question);
     let min_dims = min_dimensions_needed(&dist);
     let answer_size = question.totems.len();
@@ -162,13 +167,22 @@ fn solve_greedy(question: &Question, level: usize,
                      *w, *h, score(answer_size, *w, *h), min_dims.0, min_dims.1);
             continue;
         }
-        println!("Trying {}x{}... would give {}", *w, *h, score(answer_size, *w, *h));
-        if let Some(fit) = try_gravity_greedy_fit(&mut Board::new(*w, *h, answer_size), dist) {
+        print!("Trying {}x{}... would give {}... ", *w, *h, score(answer_size, *w, *h));
+        if let Some(fit) = do_solve(*w, *h, answer_size, &dist, greedy) {
+            println!("OK!");
             return fit;
+        } else if *w != *h {
+            if let Some(fit) = do_solve(*h, *w, answer_size, &dist, greedy) {
+                // Because of our (0, 0) constraint, sometimes the rotation works.
+                // We run fast enough to just try both.
+                println!("OK!  (with rotation {}x{})", *h, *w);
+                return fit;
+            }
         }
+        println!("No fit found.");
     }
     println!("!!! FAILED TO FIND SOLUTION. Should increase ranges in 'optimal dims'.");
-    // If we can't find a solution with a 4*totem x 4*totem grid....
+    // If we can't find a solution with a 4*totemx4*totem grid..... we deserve to crash
     try_gravity_greedy_fit(&mut Board::new(4*answer_size, 4*answer_size, answer_size), dist).unwrap()
 }
 
@@ -198,7 +212,6 @@ fn visualize(answer: &[TotemAnswer]) {
         println!();
     }
     println!("{}x{}, score={}", w, h, score(answer.len(), w, h));
-
 }
 
 fn get_shape_distribution(question: &Question) -> ShapeDist {
@@ -233,8 +246,16 @@ impl Solver {
         #[cfg(feature = "timing")]
         let now = Instant::now();
 
-        let solution = solve_greedy(question, inferred_level, &self.optimal_dims);
+        // As-is, we have a low chance of hitting 5912.5 if we keep retrying (get both 3x3 level 2 and
+        // 4x4 level 3). Getting a (much!) higher score would involve being able to solve another of the
+        // larger perfect-fits (level 5, 7, 9), which seems unlikely (if not impossible) with our greedy
+        // approach, and too many possibilities for our exact solver. Next step: smarter greedy bin
+        // packing...? Would have to get a better understanding of what's the probability of getting a
+        // solvable perfect fit at level 5+ to know if it's feasible on the server.
+        let greedy = num_totems > 8;  // TODO: decide on breakpoint
+        let solution = solve(question, inferred_level, &self.optimal_dims, greedy);
 
+        // TODO quick visual indication of whether we got the optimal score
 
         #[cfg(feature = "visualize")]
         visualize(&solution);
