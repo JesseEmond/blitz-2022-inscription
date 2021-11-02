@@ -1,3 +1,4 @@
+use crate::shape_info::ShapeVariant;
 use serde::{Deserialize, Serialize};
 use std::ops;
 
@@ -23,6 +24,12 @@ pub enum Totem {
     S,
     T,
     Z,
+}
+
+impl Totem {
+    pub fn get_rotations(&self) -> &'static [ShapeVariant] {
+        ShapeVariant::get_rotations(self)
+    }
 }
 
 impl From<Totem> for usize {
