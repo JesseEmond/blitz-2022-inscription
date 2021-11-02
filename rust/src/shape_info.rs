@@ -1,4 +1,4 @@
-use crate::game_interface::{CoordinatePair, Totem};
+use crate::game_interface::{CoordinatePair, Totem, TOTEM_COUNT};
 
 const I_VARIANTS: [ShapeVariant; 2] = [
     // IIII
@@ -176,7 +176,7 @@ const Z_VARIANTS: [ShapeVariant; 2] = [
     },
 ];
 
-const VARIANTS: [&[ShapeVariant]; 7] = [
+const VARIANTS: [&[ShapeVariant]; TOTEM_COUNT] = [
     &I_VARIANTS,
     &J_VARIANTS,
     &L_VARIANTS,

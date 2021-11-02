@@ -1,5 +1,5 @@
 use crate::{
-    game_interface::{Answer, Question, Totem, TotemAnswer, TotemBag},
+    game_interface::{Answer, Question, TotemAnswer, TotemBag, TOTEMS},
     scoring::{score, OptimalDimensions},
     shape_info::ShapeVariant,
     solver::{macros::solver_boilerplate, Solver},
@@ -52,7 +52,7 @@ impl Board {
             }
         }
         self.totems
-            .push(TotemAnswer::new(shape.shape, shape.coords.to_vec()));
+            .push(TotemAnswer::new(shape.shape, shape.coords));
     }
 
     fn fits(&self, shape: &ShapeVariant) -> Option<bool> {
@@ -93,13 +93,13 @@ impl Board {
     }
 }
 
-fn try_fit(board: &mut Board, mut dist: TotemBag) -> Option<Vec<TotemAnswer>> {
+fn try_fit(mut board: Board, mut dist: TotemBag) -> Option<Vec<TotemAnswer>> {
     loop {
         let mut best_shape: Option<ShapeVariant> = None;
         let mut best_touchpoints: u32 = 0;
         let mut shapes_left = 0;
-        for totem in Totem::iter() {
-            let n_totem = dist[*totem as usize];
+        for totem in &TOTEMS {
+            let n_totem = dist[*totem];
             shapes_left += n_totem;
             if n_totem > 0 {
                 for variant in ShapeVariant::get_rotations(totem) {
@@ -125,7 +125,7 @@ fn try_fit(board: &mut Board, mut dist: TotemBag) -> Option<Vec<TotemAnswer>> {
         match best_shape {
             Some(shape) => {
                 board.mark(&shape);
-                dist[shape.shape as usize] -= 1;
+                dist[shape.shape] -= 1;
             }
             None => return None,
         }
@@ -139,7 +139,7 @@ fn solve_greedy(question: &Question) -> Vec<TotemAnswer> {
     let mut side = cmp::max((n_squares as f64).sqrt().ceil() as usize, 4);
     loop {
         println!("Trying {0}x{0}...", side);
-        if let Some(fit) = try_fit(&mut Board::new(side, answer_size), dist) {
+        if let Some(fit) = try_fit(Board::new(side, answer_size), dist) {
             return fit;
         }
         side += 1;
