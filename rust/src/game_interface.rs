@@ -107,16 +107,16 @@ impl Question {
     }
 }
 
-pub type CoordinatePair = (usize, usize);
+pub type Point = (usize, usize);
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TotemAnswer {
     pub shape: Totem,
-    pub coordinates: [CoordinatePair; 4],
+    pub coordinates: [Point; 4],
 }
 
 impl TotemAnswer {
-    pub fn new(shape: Totem, coordinates: [CoordinatePair; 4]) -> Self {
+    pub fn new(shape: Totem, coordinates: [Point; 4]) -> Self {
         TotemAnswer { shape, coordinates }
     }
 }

@@ -1,4 +1,4 @@
-use crate::game_interface::{CoordinatePair, Totem, TOTEM_COUNT};
+use crate::game_interface::{Point, TOTEM_COUNT, Totem};
 
 const I_VARIANTS: [ShapeVariant; 2] = [
     // IIII
@@ -189,7 +189,7 @@ const VARIANTS: [&[ShapeVariant]; TOTEM_COUNT] = [
 #[derive(Clone, Debug)]
 pub struct ShapeVariant {
     pub shape: Totem,
-    pub coords: [CoordinatePair; 4],
+    pub coords: [Point; 4],
     pub width: usize,
     pub height: usize,
 }
