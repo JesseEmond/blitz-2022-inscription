@@ -1,4 +1,4 @@
-use crate::game_interface::{Point, TOTEM_COUNT, Totem};
+use crate::game_interface::{Point, Totem, TOTEM_COUNT};
 
 const I_VARIANTS: [ShapeVariant; 2] = [
     // IIII

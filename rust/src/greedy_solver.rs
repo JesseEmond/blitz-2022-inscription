@@ -120,7 +120,7 @@ fn try_fit(mut board: Board, mut dist: TotemBag) -> Option<Vec<TotemAnswer>> {
             }
         }
         if shapes_left == 0 {
-            return Some(board.totems.clone());
+            return Some(board.totems);
         }
         match best_shape {
             Some(shape) => {
@@ -139,7 +139,7 @@ fn solve_greedy(question: &Question) -> Vec<TotemAnswer> {
     let mut side = cmp::max((n_squares as f64).sqrt().ceil() as usize, 4);
     loop {
         println!("Trying {0}x{0}...", side);
-        if let Some(fit) = try_fit(Board::new(side, answer_size), dist) {
+        if let Some(fit) = try_fit(Board::new(side, answer_size), dist.clone()) {
             return fit;
         }
         side += 1;

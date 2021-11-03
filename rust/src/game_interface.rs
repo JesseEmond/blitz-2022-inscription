@@ -1,6 +1,6 @@
 use crate::shape_info::ShapeVariant;
 use serde::{Deserialize, Serialize};
-use std::ops;
+use std::{iter, ops};
 
 pub const TOTEM_COUNT: usize = 7;
 
@@ -45,26 +45,112 @@ impl From<usize> for Totem {
     }
 }
 
+impl<T> ops::Index<Totem> for [T] {
+    type Output = T;
+
+    fn index(&self, index: Totem) -> &Self::Output {
+        &self[index as usize]
+    }
+}
+
+impl<T> ops::Index<&Totem> for [T] {
+    type Output = T;
+
+    fn index(&self, index: &Totem) -> &Self::Output {
+        &self[*index as usize]
+    }
+}
+
+impl<T> ops::IndexMut<Totem> for [T] {
+    fn index_mut(&mut self, index: Totem) -> &mut Self::Output {
+        &mut self[index as usize]
+    }
+}
+
+impl<T> ops::IndexMut<&Totem> for [T] {
+    fn index_mut(&mut self, index: &Totem) -> &mut Self::Output {
+        &mut self[*index as usize]
+    }
+}
+
+impl<T> ops::Index<Totem> for Vec<T> {
+    type Output = T;
+
+    fn index(&self, index: Totem) -> &Self::Output {
+        &self[index as usize]
+    }
+}
+
+impl<T> ops::Index<&Totem> for Vec<T> {
+    type Output = T;
+
+    fn index(&self, index: &Totem) -> &Self::Output {
+        &self[*index as usize]
+    }
+}
+
+impl<T> ops::IndexMut<Totem> for Vec<T> {
+    fn index_mut(&mut self, index: Totem) -> &mut Self::Output {
+        &mut self[index as usize]
+    }
+}
+
+impl<T> ops::IndexMut<&Totem> for Vec<T> {
+    fn index_mut(&mut self, index: &Totem) -> &mut Self::Output {
+        &mut self[*index as usize]
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TotemQuestion {
     pub shape: Totem,
 }
 
 #[repr(transparent)]
-#[derive(Default, Clone, Copy, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct TotemBag([usize; TOTEM_COUNT]);
 
 impl TotemBag {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn from_iter<T, I>(src: T) -> Self
     where
         T: IntoIterator<Item = I>,
         TotemBag: ops::IndexMut<I, Output = usize>,
     {
-        let mut slf = Self::default();
+        let mut slf = Self::new();
         for idx in src {
             slf[idx] += 1;
         }
         slf
+    }
+
+    pub fn total(&self) -> usize {
+        return self.0.iter().sum();
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.iter().all(|&v| v == 0)
+    }
+
+    pub fn contains(&self, totem: &Totem) -> bool {
+        self.0[totem] > 0
+    }
+
+    pub fn expand(&self) -> impl iter::Iterator<Item = Totem> + '_ {
+        TOTEMS
+            .iter()
+            .flat_map(move |&t| iter::repeat(t).take(self.0[t]))
+    }
+
+    pub fn min(&self) -> Totem {
+        *TOTEMS.iter().min_by_key(|&t| self.0[t]).unwrap()
+    }
+
+    pub fn max(&self) -> Totem {
+        *TOTEMS.iter().max_by_key(|&t| self.0[t]).unwrap()
     }
 }
 
@@ -90,9 +176,23 @@ impl ops::Index<Totem> for TotemBag {
     }
 }
 
+impl ops::Index<&Totem> for TotemBag {
+    type Output = usize;
+
+    fn index(&self, index: &Totem) -> &Self::Output {
+        &self.0[*index as usize]
+    }
+}
+
 impl ops::IndexMut<Totem> for TotemBag {
     fn index_mut(&mut self, index: Totem) -> &mut Self::Output {
         &mut self.0[index as usize]
+    }
+}
+
+impl ops::IndexMut<&Totem> for TotemBag {
+    fn index_mut(&mut self, index: &Totem) -> &mut Self::Output {
+        &mut self.0[*index as usize]
     }
 }
 
