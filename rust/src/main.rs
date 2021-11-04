@@ -1,6 +1,8 @@
 use std::env;
 
+mod bitgrid;
 mod client;
+mod dlx;
 mod game_interface;
 mod greedy_solver;
 mod scoring;
@@ -9,7 +11,8 @@ mod solver;
 
 use client::{LocalGameClient, WebSocketGameClient};
 
-type SelectedSolver = greedy_solver::GreedySolver;
+//type SelectedSolver = greedy_solver::GreedySolver;
+type SelectedSolver = dlx::DlxSolver;
 
 #[tokio::main]
 async fn main() {
