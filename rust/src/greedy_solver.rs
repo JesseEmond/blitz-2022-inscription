@@ -52,7 +52,7 @@ impl Board {
             }
         }
         self.totems
-            .push(TotemAnswer::new(shape.shape, shape.coords));
+            .push(TotemAnswer::new(shape.shape, shape.coords.to_vec()));
     }
 
     fn fits(&self, shape: &ShapeVariant) -> Option<bool> {

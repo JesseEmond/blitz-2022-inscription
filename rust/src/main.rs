@@ -1,6 +1,7 @@
+#![allow(dead_code)]
+
 use std::env;
 
-mod bitgrid;
 mod client;
 mod dlx;
 mod game_interface;

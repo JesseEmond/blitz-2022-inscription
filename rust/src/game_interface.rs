@@ -139,10 +139,14 @@ impl TotemBag {
         self.0[totem] > 0
     }
 
-    pub fn expand(&self) -> impl iter::Iterator<Item = Totem> + '_ {
+    pub fn expand_iter(&self) -> impl iter::Iterator<Item = Totem> + '_ {
         TOTEMS
             .iter()
             .flat_map(move |&t| iter::repeat(t).take(self.0[t]))
+    }
+
+    pub fn expand_vec(&self) -> Vec<Totem> {
+        self.expand_iter().collect()
     }
 
     pub fn min(&self) -> Totem {
@@ -212,11 +216,11 @@ pub type Point = (usize, usize);
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TotemAnswer {
     pub shape: Totem,
-    pub coordinates: [Point; 4],
+    pub coordinates: Vec<Point>,
 }
 
 impl TotemAnswer {
-    pub fn new(shape: Totem, coordinates: [Point; 4]) -> Self {
+    pub fn new(shape: Totem, coordinates: Vec<Point>) -> Self {
         TotemAnswer { shape, coordinates }
     }
 }
