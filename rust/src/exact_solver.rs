@@ -61,8 +61,7 @@ impl Board {
             }
             min_shape_y = cmp::max(min_shape_y, first_unset_y);
         }
-        // TODO can remove this?
-        //min_shape_y = 0;
+        min_shape_y = 0;  // TODO this improves perfect packs -- there's a bug in the logic then
         for current_y in min_shape_y..(self.height + 1 - shape.height as usize) {
             *y = current_y;
             if self.fits(shape, left_x, *y) {
