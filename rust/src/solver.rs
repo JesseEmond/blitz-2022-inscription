@@ -184,12 +184,12 @@ fn do_solve(width: usize, height: usize, num_totems: usize, dist: &ShapeDist, gr
         // From tests, we think we're on a c5a.2xlarge, so 4 cores, 8 hyperthreaded.
         // As IIUC going up to 8 would hurt, since we're doing purely CPU processing and not much IO:
         // https://www.credera.com/insights/whats-in-a-vcpu-state-of-amazon-ec2-in-2018
-        for _ in 0..4 {
+        for _ in 0..3 {
             let dist = *dist;
             handles.push(thread::spawn(move || {
-                let mut attempts = 3500;
+                let mut attempts = 1000;
                 if num_totems >= 256 {  // Takes too long in this case.
-                    attempts = 250;
+                    attempts = 100;
                 }
                 for _ in 0..attempts {
                     if let Some(sln) = try_gravity_greedy_fit(&mut Board::new(width, height, num_totems), dist) {
@@ -326,10 +326,11 @@ impl Solver {
     pub fn get_answer(&self, game_message: &GameMessage) -> Result<Answer, Box<dyn Error>> {
         let question = &game_message.payload;
         let num_totems = question.totems.len();
+        let greedy = num_totems > 8;  // TODO: decide on breakpoint
         println!("Received question with {} totems.", num_totems);
 
         let inferred_level = (num_totems as f64).log2().ceil() as usize;
-        //debug_full_packing_probability(inferred_level, /*greedy=*/num_totems > 8, &self.optimal_dims);
+        //debug_full_packing_probability(inferred_level, greedy, &self.optimal_dims);
         let (optimal_w, optimal_h) = self.optimal_dims.level_dims(inferred_level).next().unwrap();
         println!("Optimal dims for level {} would be {}x{}, which would give score {}",
                  inferred_level + 1, optimal_w, optimal_h, score(num_totems, *optimal_w, *optimal_h));
@@ -337,16 +338,9 @@ impl Solver {
         #[cfg(feature = "timing")]
         let now = Instant::now();
 
-        // As-is, we have a low chance of hitting 5912.5 if we keep retrying (get both 3x3 level 2 and
-        // 4x4 level 3). Getting a (much!) higher score would involve being able to solve another of the
-        // larger perfect-fits (level 5, 7, 9), which seems unlikely (if not impossible) with our greedy
-        // approach, and too many possibilities for our exact solver. Next step: smarter greedy bin
-        // packing...? Would have to get a better understanding of what's the probability of getting a
-        // solvable perfect fit at level 5+ to know if it's feasible on the server.
-        let greedy = num_totems > 8;  // TODO: decide on breakpoint
         let solution = solve(question, inferred_level, &self.optimal_dims, greedy);
 
-        // TODO quick visual indication of whether we got the optimal score
+        // TODO quick visual indication of whether we got the optimal score for level
 
         #[cfg(feature = "visualize")]
         visualize(&solution);
