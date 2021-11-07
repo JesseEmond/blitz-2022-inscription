@@ -14,6 +14,8 @@ use std::{error::Error, cmp, thread, time::Instant};
 struct Board {
     width: usize,
     height: usize,
+    // TODO: consider making this 2 columns per row (half the "fit" checks, since the max perfect dim is 32x32 for 256 totems)
+    // i.e. 2x u32s in a single u64, with the shape masks precomputed like that.
     masked_grid: Vec<u64>,
     touchpoints: Vec<Vec<u32>>,
     totems: Vec<TotemAnswer>,
@@ -94,14 +96,19 @@ impl Board {
         total
     }
 
-    fn move_first_fit_above(&self, shape: &ShapeVariant, left_x: usize, out_y: &mut usize) -> bool {
+    fn min_y_for_shape(&self, shape: &ShapeVariant, left_x: usize) -> usize {
         let mut min_y = 0;
         for (dx, dy) in &shape.coords {
             let x = left_x + *dx;
-            if self.first_unset_y_at_x[x] > *dy {
-                min_y = cmp::max(min_y, self.first_unset_y_at_x[x] - *dy);
+            if self.first_unset_y_at_x[x] > min_y + *dy {
+                min_y = self.first_unset_y_at_x[x] - *dy;
             }
         }
+        min_y
+    }
+
+    fn move_first_fit_above(&self, shape: &ShapeVariant, left_x: usize, out_y: &mut usize) -> bool {
+        let min_y = self.min_y_for_shape(shape, left_x);
         for y in min_y..(self.height + 1 - shape.height as usize) {
             if self.fits(shape, left_x, y) {
                 *out_y = y;
@@ -178,40 +185,50 @@ fn min_dimensions_needed(dist: &ShapeDist) -> Dims {
     dims
 }
 
-fn do_solve(width: usize, height: usize, num_totems: usize, dist: &ShapeDist, greedy: bool) -> Option<Vec<TotemAnswer>> {
+fn try_greedy_solve(width: usize, height: usize, num_totems: usize, dist: ShapeDist) -> Option<Vec<TotemAnswer>> {
+    let mut attempts = 1000;
+    if num_totems >= 256 {  // Takes too long in this case.
+        attempts = 100;
+    }
+    for _ in 0..attempts {
+        if let Some(sln) = try_gravity_greedy_fit(&mut Board::new(width, height, num_totems), dist) {
+            return Some(sln);
+        }
+    }
+    None
+}
+
+fn do_solve(width: usize, height: usize, num_totems: usize, dist: &ShapeDist,
+            greedy: bool, greedy_multithreaded: bool) -> Option<Vec<TotemAnswer>> {
     if greedy {
-        let mut handles = vec![];
-        // From tests, we think we're on a c5a.2xlarge, so 4 cores, 8 hyperthreaded.
-        // As IIUC going up to 8 would hurt, since we're doing purely CPU processing and not much IO:
-        // https://www.credera.com/insights/whats-in-a-vcpu-state-of-amazon-ec2-in-2018
-        for _ in 0..3 {
-            let dist = *dist;
-            handles.push(thread::spawn(move || {
-                let mut attempts = 1000;
-                if num_totems >= 256 {  // Takes too long in this case.
-                    attempts = 100;
-                }
-                for _ in 0..attempts {
-                    if let Some(sln) = try_gravity_greedy_fit(&mut Board::new(width, height, num_totems), dist) {
-                        return Some(sln);
-                    }
-                }
-                None
-            }));
-        }
-        for handle in handles {
-            if let Some(sln) = handle.join().unwrap() {
-                return Some(sln);
+        if greedy_multithreaded {
+            let mut handles = vec![];
+            // From tests, we think we're on a c5a.2xlarge, so 4 cores, 8 hyperthreaded.
+            // As IIUC going up to 8 would hurt, since we're doing purely CPU processing and not much IO:
+            // https://www.credera.com/insights/whats-in-a-vcpu-state-of-amazon-ec2-in-2018
+            for _ in 0..3 {
+                let dist = *dist;
+                handles.push(thread::spawn(move || {
+                    try_greedy_solve(width, height, num_totems, dist)
+                }));
             }
+            for handle in handles {
+                if let Some(sln) = handle.join().unwrap() {
+                    return Some(sln);
+                }
+            }
+            None
+        } else {
+            try_greedy_solve(width, height, num_totems, *dist)
         }
-        return None;
     } else {
         exact_solver::solve(width, height, *dist)
     }
 }
 
 fn solve(question: &Question, level: usize,
-         optimal_dims: &OptimalDimensions, greedy: bool) -> Vec<TotemAnswer> {
+         optimal_dims: &OptimalDimensions, greedy: bool,
+         greedy_multithreaded: bool) -> Vec<TotemAnswer> {
     let dist = get_shape_distribution(question);
     let min_dims = min_dimensions_needed(&dist);
     let answer_size = question.totems.len();
@@ -224,11 +241,11 @@ fn solve(question: &Question, level: usize,
             continue;
         }
         print!("Trying {}x{}... would give {}... ", *w, *h, score(answer_size, *w, *h));
-        if let Some(fit) = do_solve(*w, *h, answer_size, &dist, greedy) {
+        if let Some(fit) = do_solve(*w, *h, answer_size, &dist, greedy, greedy_multithreaded) {
             println!("OK!");
             return fit;
         } else if *w != *h {
-            if let Some(fit) = do_solve(*h, *w, answer_size, &dist, greedy) {
+            if let Some(fit) = do_solve(*h, *w, answer_size, &dist, greedy, greedy_multithreaded) {
                 // Because of our (0, 0) constraint, sometimes the rotation works.
                 // We run fast enough to just try both.
                 println!("OK!  (with rotation {}x{})", *h, *w);
@@ -278,8 +295,24 @@ fn get_shape_distribution(question: &Question) -> ShapeDist {
     dist
 }
 
+// Returns 95% confidence interval for the success probability given a given amount of 'successes'
+// over a given amount of 'trials'.
+// https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval
+// Using the Wilson score interval.
+fn binomial_confidence_interval(successes: u64, trials: u64) -> (f64, f64) {
+    let n = trials as f64;
+    let p_hat = successes as f64 / n;
+    let z: f64 = 1.96;  // alpha = 1 - 0.95 = 0.05 for 95% confidence, 1-alpha/2=0.975 => z=1.96
+    // Give names to variables for the general form of a +- b * c.sqrt(), to make it (a bit) easier to follow.
+    let a = (p_hat + z * z / (2f64 * n)) / (1f64 + z * z / n);
+    let b = z / (1f64 + z * z / n);
+    let c = p_hat * (1f64 - p_hat) / n + z * z / (4f64 * n * n);
+    (a - b * c.sqrt(), a + b * c.sqrt())
+}
+
 #[allow(dead_code)]
-fn debug_full_packing_probability(level: usize, greedy: bool, optimal_dims: &OptimalDimensions) {
+fn debug_full_packing_probability(level: usize, greedy: bool, greedy_multithreaded: bool, 
+                                  optimal_dims: &OptimalDimensions) {
     let num_totems = 1 << level;
     let mut rng = rand::thread_rng();
     let mut total_runs = 0;
@@ -296,7 +329,7 @@ fn debug_full_packing_probability(level: usize, greedy: bool, optimal_dims: &Opt
         }
         let dist = get_shape_distribution(&Question { totems: questions });
         let (w, h) = optimal_dims.level_dims(level).next().unwrap();
-        if let Some(_sln) = do_solve(*w, *h, num_totems, &dist, greedy) {
+        if let Some(_sln) = do_solve(*w, *h, num_totems, &dist, greedy, greedy_multithreaded) {
             perfect_packs += 1;
             // visualize(&_sln);  // To visually make sure the solutions are valid.
         }
@@ -305,8 +338,10 @@ fn debug_full_packing_probability(level: usize, greedy: bool, optimal_dims: &Opt
             let total_time = start_time.elapsed().as_secs_f64();
             let pack_speed = (total_runs as f64) / total_time;
             let pack_ratio = (perfect_packs as f32) / (total_runs as f32);
-            println!("{} / {} perfect packs ({:.1}%), ~{:.2}s/it",
-                     perfect_packs, total_runs, pack_ratio * 100f32, 1f64 / pack_speed);
+            let (lower_bound, upper_bound) = binomial_confidence_interval(perfect_packs, total_runs);
+            println!("{} / {} perfect packs (p={:.1}%   alpha=0.05 interval=[{:.1}%, {:.1}%]),   ~{:.2}s/it",
+                     perfect_packs, total_runs, pack_ratio * 100f32, lower_bound * 100f64, upper_bound * 100f64,
+                     1f64 / pack_speed);
             last_time = std::time::Instant::now();
         }
     }
@@ -330,7 +365,11 @@ impl Solver {
         println!("Received question with {} totems.", num_totems);
 
         let inferred_level = (num_totems as f64).log2().ceil() as usize;
-        //debug_full_packing_probability(inferred_level, greedy, &self.optimal_dims);
+
+        // If you're trying to estimate the probability of hitting a perfect fit, uncomment the following.
+        // You can set multithreading to off if you want to profile the implementation with less noise.
+        //debug_full_packing_probability(inferred_level, greedy, /*greedy_multithreaded=*/true, &self.optimal_dims);
+
         let (optimal_w, optimal_h) = self.optimal_dims.level_dims(inferred_level).next().unwrap();
         println!("Optimal dims for level {} would be {}x{}, which would give score {}",
                  inferred_level + 1, optimal_w, optimal_h, score(num_totems, *optimal_w, *optimal_h));
@@ -338,7 +377,7 @@ impl Solver {
         #[cfg(feature = "timing")]
         let now = Instant::now();
 
-        let solution = solve(question, inferred_level, &self.optimal_dims, greedy);
+        let solution = solve(question, inferred_level, &self.optimal_dims, greedy, /*greedy_multithreaded=*/true);
 
         // TODO quick visual indication of whether we got the optimal score for level
 
