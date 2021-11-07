@@ -174,7 +174,7 @@ impl GreedySolver {
         );
 
         solver_boilerplate! {
-            Answer::new(solve_greedy(&question))
+            Answer::new(solve_greedy(question))
         }
     }
 }

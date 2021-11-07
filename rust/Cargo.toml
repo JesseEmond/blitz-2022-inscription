@@ -4,13 +4,12 @@ version = "0.1.0"
 edition = "2018"
 
 [features]
-default = ["timing"]
+default = ["timing", "mimalloc"]
 timing = []
 visualize = []
 
 [dependencies]
 futures-util = "0.3"
-hibitset = { version = "0.6", default-features = false }
 itertools = "0.10"
 ordered-float = "2.8.0"
 rand = "0.8"
@@ -18,6 +17,11 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.12", features = ["full"] }
 tokio-tungstenite = "0.15"
+
+[dependencies.mimalloc]
+version = "0.1"
+default-features = false
+optional = true
 
 [build-dependencies]
 bindgen = "0.59"

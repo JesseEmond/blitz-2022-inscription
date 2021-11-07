@@ -19,20 +19,18 @@ impl Solver for DlxSolver {
 }
 
 fn solve(totems: &[Totem]) -> Option<Answer> {
-    let optimal_dim = ((totems.len() * 4) as f64).sqrt();
+    let optimal_dim = ((totems.len() * 4) as f64).sqrt().floor() as i32;
 
-    let mut width = cmp::max(optimal_dim.floor() as i32, 2);
-    let mut height = cmp::max(optimal_dim.ceil() as i32, 4);
+    let width = cmp::max(optimal_dim, 4);
+    let mut height = cmp::max(optimal_dim, 2) + 1;
+
     for _ in 0..5 {
-        if let Some(s) = solve_for_size(&totems, width, height) {
+        if let Some(s) = solve_for_size(totems, width, height) {
             return Some(s);
         }
-        if width < height {
-            width += 1;
-        } else {
-            height += 1;
-        }
+        height += 1;
     }
+
     None
 }
 
@@ -60,6 +58,15 @@ fn solve_for_size(totems: &[Totem], width: i32, height: i32) -> Option<Answer> {
     println!("Total minos: {}", total_minos);
     println!("Board size: {}x{} ({} cells)", width, height, total_cells);
     println!("Universe size: {}", row_size);
+
+    if total_cells < total_minos {
+        println!("Board too small!");
+        return None;
+    }
+    if problem_size > 10 && total_cells - total_minos < 4 {
+        println!("Fit is very unlikely!");
+        return None;
+    }
 
     let mut row_idx = 0;
     let mut matrix = DlxMatrix::new();

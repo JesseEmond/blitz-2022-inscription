@@ -1,5 +1,9 @@
 #![allow(dead_code)]
 
+#[cfg(feature = "mimalloc")]
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 use std::env;
 
 mod client;
