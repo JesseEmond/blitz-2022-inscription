@@ -22,9 +22,10 @@ type SelectedSolver = dlx::DlxSolver;
 #[tokio::main]
 async fn main() {
     println!(
-        "[BUILD ENV]\nPROFILE={}\nOPT_LEVEL={}\nTARGET={}\nTARGET_FEATURE={}\n",
+        "[BUILD ENV]\nPROFILE={}\nOPT_LEVEL={}\nPGO_USE={}\nTARGET={}\nTARGET_FEATURE={}\n",
         env!("PROFILE"),
         env!("OPT_LEVEL"),
+        env!("PGO_USE"),
         env!("TARGET"),
         env!("CARGO_CFG_TARGET_FEATURE"),
     );

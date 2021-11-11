@@ -1,7 +1,6 @@
 use std::slice;
 
 mod bindings;
-mod matrix;
 mod solver;
 
 pub use solver::DlxSolver;
@@ -27,8 +26,8 @@ impl DlxMatrix {
     }
 
     #[inline]
-    pub fn cols(&self) -> i32 {
-        unsafe { dlx_rows(self.handle) }
+    pub fn columns(&self) -> i32 {
+        unsafe { dlx_cols(self.handle) }
     }
 
     #[inline]
@@ -130,6 +129,9 @@ mod tests {
         dlx.set(3, 1);
 
         dlx.mark_optional(2);
+
+        assert_eq!(dlx.rows(), 4);
+        assert_eq!(dlx.columns(), 3);
 
         let solutions = dlx.solve_all();
 

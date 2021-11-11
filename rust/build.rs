@@ -14,28 +14,29 @@ fn main() {
         env::var("CARGO_CFG_TARGET_FEATURE").unwrap()
     );
 
-    let vendor_dlx = PathBuf::from_iter(&["vendor", "dlx"]);
+    let flags = env::var("RUSTFLAGS").unwrap_or_default();
+    println!(
+        "cargo:rustc-env=PGO_USE={}",
+        if flags.contains("profile-use=") { "yes" } else { "no" },
+    );
 
-    println!(
-        "cargo:rerun-if-changed={}",
-        vendor_dlx.join("dlx.h").display()
-    );
-    println!(
-        "cargo:rerun-if-changed={}",
-        vendor_dlx.join("dlx.c").display()
-    );
+    let dlx_mod = PathBuf::from_iter(&["src", "dlx"]);
+
+    let dlx_h = dlx_mod.join("dlx.h");
+    let dlx_c = dlx_mod.join("dlx.c");
+
+    println!("cargo:rerun-if-changed={}", dlx_h.display());
+    println!("cargo:rerun-if-changed={}", dlx_c.display());
 
     cc::Build::new()
-        .file(vendor_dlx.join("dlx.c"))
-        .include(&vendor_dlx)
+        .file(&dlx_c)
         .flag_if_supported("-Wno-unused-parameter")
         .compile("libdlx.a");
 
     bindgen::builder()
-        .header(vendor_dlx.join("dlx.h").to_string_lossy())
+        .header(dlx_h.to_string_lossy())
         .allowlist_function("dlx_.*")
         .allowlist_type("dlx_.*")
-        .clang_arg(format!("-I{}", vendor_dlx.display()))
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .generate()
         .expect("DLX bindings failure")

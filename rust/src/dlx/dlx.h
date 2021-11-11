@@ -58,24 +58,24 @@ int dlx_pick_row(dlx_t dlx, int row);
 // Returns 0 on success, -1 otherwise.
 int dlx_solve(dlx_t dlx,
               int greedy,
-              void (*cover_cb)(void *data, int col, int s, int row),
-              void (*uncover_cb)(void *data),
-              void (*found_cb)(void *data),
-              void (*stuck_cb)(void *data, int col, int depth),
-              void *data);
+              void (*cover_cb)(void *context, int col, int s, int row),
+              void (*uncover_cb)(void *context),
+              void (*found_cb)(void *context),
+              void (*stuck_cb)(void *context, int col),
+              void *context);
 
 // Runs the DLX algorithm, and for every exact cover, calls the given callback
 // with an array containing all the row numbers of the solution and the size of
 // said array.
 void dlx_forall_cover(dlx_t dlx,
-                      void (*cb)(void *data, int rows[], int n),
-                      void *data);
+                      void (*cb)(void *context, int rows[], int n),
+                      void *context);
 
 // Runs the DLX algorithm stopping at the first exact cover found. The given
 // callback is called with an array containing all the row numbers of the
 // solution and the size of said array.
 void dlx_first_cover(dlx_t dlx,
-                     void (*cb)(void *data, int rows[], int n),
-                     void *data);
+                     void (*cb)(void *context, int rows[], int n),
+                     void *context);
 
 #endif /* DLX_H */

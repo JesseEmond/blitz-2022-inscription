@@ -6,9 +6,8 @@
 #include <stdlib.h>
 #include "dlx.h"
 
-#define F(i,n) for(int i = 0; i < n; i++)
-
-#define C(i,n,dir) for(cell_ptr i = (n)->dir; i != n; i = i->dir)
+#define F(i, n) for(int i = 0; i < n; ++i)
+#define C(i, n, next) for(cell_ptr i = (n)->next; i != n; i = i->next)
 
 struct cell_s;
 typedef struct cell_s *cell_ptr;
@@ -231,19 +230,18 @@ int dlx_remove_row(dlx_t p, int i) {
   return 0;
 }
 
-static int dlx_solve_inner(dlx_t p,
-                           int greedy,
-                           void (*cover_cb)(void*, int, int, int),
-                           void (*uncover_cb)(void*),
-                           void (*found_cb)(void*),
-                           void (*stuck_cb)(void*, int, int),
-                           void *data,
-                           int depth) {
+int dlx_solve(dlx_t p,
+              int greedy,
+              void (*cover_cb)(void*, int, int, int),
+              void (*uncover_cb)(void*),
+              void (*found_cb)(void*),
+              void (*stuck_cb)(void*, int),
+              void *context) {
   cell_ptr c = p->root->R;
   int rc = -1;
   if (c == p->root) {
     if (found_cb) {
-      found_cb(data);
+      found_cb(context);
     }
     return 0;
   }
@@ -255,35 +253,34 @@ static int dlx_solve_inner(dlx_t p,
   }
   if (!s) {
     if (stuck_cb) {
-      stuck_cb(data, c->n, depth);
+      stuck_cb(context, c->n);
     }
     return -1;
   }
   cover_col(c);
   C(r, c, D) {
     if (cover_cb) {
-      cover_cb(data, c->n, s, r->n);
+      cover_cb(context, c->n, s, r->n);
     }
     C(j, r, R) {
       cover_col(j->c);
     }
-    rc = dlx_solve_inner(
+    rc = dlx_solve(
       p,
       greedy,
       cover_cb,
       uncover_cb,
       found_cb,
       stuck_cb,
-      data,
-      depth + 1
+      context
     );
     if (uncover_cb) {
-      uncover_cb(data);
+      uncover_cb(context);
     }
     C(j, r, L) {
       uncover_col(j->c);
     }
-    if (!greedy && rc == 0) {
+    if (rc == 0 && !greedy) {
       break;
     }
   }
@@ -291,58 +288,39 @@ static int dlx_solve_inner(dlx_t p,
   return rc;
 }
 
-int dlx_solve(dlx_t p,
-              int greedy,
-              void (*cover_cb)(void*, int, int, int),
-              void (*uncover_cb)(void*),
-              void (*found_cb)(void*),
-              void (*stuck_cb)(void*, int, int),
-              void *data) {
-  return dlx_solve_inner(
-    p,
-    greedy,
-    cover_cb,
-    uncover_cb,
-    found_cb,
-    stuck_cb,
-    data,
-    0
-  );
-}
-
 typedef struct dlx_solve_cb_locals {
   int soln;
   int *sol;
   void (*cb)(void*, int[], int);
-  void *data;
+  void *context;
 } dlx_solve_cb_locals;
 
-static void dlx_solve_cover_cb(void *data, int _c, int _s, int r) {
-  dlx_solve_cb_locals *locals = (dlx_solve_cb_locals*) data;
+static void dlx_solve_cover_cb(void *context, int _c, int _s, int r) {
+  dlx_solve_cb_locals *locals = (dlx_solve_cb_locals*) context;
   locals->sol[locals->soln++] = r;
 }
 
-static void dlx_solve_uncover_cb(void *data) {
-  dlx_solve_cb_locals *locals = (dlx_solve_cb_locals*) data;
+static void dlx_solve_uncover_cb(void *context) {
+  dlx_solve_cb_locals *locals = (dlx_solve_cb_locals*) context;
   locals->soln--;
 }
 
-static void dlx_solve_found_cb(void *data) {
-  dlx_solve_cb_locals *locals = (dlx_solve_cb_locals*) data;
-  locals->cb(locals->data, locals->sol, locals->soln);
+static void dlx_solve_found_cb(void *context) {
+  dlx_solve_cb_locals *locals = (dlx_solve_cb_locals*) context;
+  locals->cb(locals->context, locals->sol, locals->soln);
 }
 
-static void dlx_solve_stuck_cb(void *_data, int _col, int _depth) {
+static void dlx_solve_stuck_cb(void *_context, int _col) {
 }
 
-void dlx_forall_cover(dlx_t p, void (*cb)(void*, int[], int), void *data) {
+void dlx_forall_cover(dlx_t p, void (*cb)(void*, int[], int), void *context) {
   int sol[p->rtabn];
 
   dlx_solve_cb_locals locals;
   locals.soln = 0;
   locals.sol = sol;
   locals.cb = cb;
-  locals.data = data;
+  locals.context = context;
 
   dlx_solve(
     p,
@@ -355,14 +333,14 @@ void dlx_forall_cover(dlx_t p, void (*cb)(void*, int[], int), void *data) {
   );
 }
 
-void dlx_first_cover(dlx_t p, void (*cb)(void*, int[], int), void *data) {
+void dlx_first_cover(dlx_t p, void (*cb)(void*, int[], int), void *context) {
   int sol[p->rtabn];
 
   dlx_solve_cb_locals locals;
   locals.soln = 0;
   locals.sol = sol;
   locals.cb = cb;
-  locals.data = data;
+  locals.context = context;
 
   dlx_solve(
     p,
