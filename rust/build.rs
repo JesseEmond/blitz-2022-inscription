@@ -17,7 +17,11 @@ fn main() {
     let flags = env::var("RUSTFLAGS").unwrap_or_default();
     println!(
         "cargo:rustc-env=PGO_USE={}",
-        if flags.contains("profile-use=") { "yes" } else { "no" },
+        if flags.contains("profile-use=") {
+            "yes"
+        } else {
+            "no"
+        },
     );
 
     let dlx_mod = PathBuf::from_iter(&["src", "dlx"]);

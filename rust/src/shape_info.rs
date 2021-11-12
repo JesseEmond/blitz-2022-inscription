@@ -1,4 +1,4 @@
-use crate::game_interface::{Point, Totem, TOTEM_COUNT};
+use crate::game_interface::{Point, Totem, TotemAnswer, TOTEM_COUNT};
 
 const I_VARIANTS: [ShapeVariant; 2] = [
     // IIII
@@ -197,5 +197,19 @@ pub struct ShapeVariant {
 impl ShapeVariant {
     pub fn get_rotations(totem: &Totem) -> &'static [ShapeVariant] {
         VARIANTS[*totem as usize]
+    }
+
+    pub fn as_answer(&self, offset_x: usize, offset_y: usize) -> TotemAnswer {
+        TotemAnswer::new(
+            self.shape,
+            if offset_x == 0 && offset_y == 0 {
+                self.coords.to_vec()
+            } else {
+                self.coords
+                    .iter()
+                    .map(|(x, y)| (x + offset_x, y + offset_y))
+                    .collect()
+            },
+        )
     }
 }

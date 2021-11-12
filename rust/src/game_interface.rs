@@ -234,6 +234,10 @@ impl Answer {
     pub fn new(totems: Vec<TotemAnswer>) -> Self {
         Answer { totems }
     }
+
+    pub fn single(totem: TotemAnswer) -> Self {
+        Self::new(vec![totem])
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]

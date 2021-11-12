@@ -1,6 +1,6 @@
 use crate::{
     dlx::DlxMatrix,
-    game_interface::{Answer, Question, Totem, TotemAnswer},
+    game_interface::{Answer, Question, Totem},
     shape_info::ShapeVariant,
     solver::{macros::solver_boilerplate, Solver},
 };
@@ -19,25 +19,34 @@ impl Solver for DlxSolver {
 }
 
 fn solve(totems: &[Totem]) -> Option<Answer> {
-    let optimal_dim = ((totems.len() * 4) as f64).sqrt().floor() as i32;
-
-    let width = cmp::max(optimal_dim, 4);
-    let mut height = cmp::max(optimal_dim, 2) + 1;
-
-    for _ in 0..5 {
-        if let Some(s) = solve_for_size(totems, width, height) {
-            return Some(s);
+    match totems.len() {
+        0..=1 => totems
+            .first()
+            .and_then(|t| t.get_rotations().first())
+            .map(|t| Answer::single(t.as_answer(0, 0))),
+        problem_size @ 2..=8 => {
+            let optimal = ((problem_size * 4) as f64).sqrt().round() as i32;
+            let mut width = cmp::max(optimal, 3);
+            let mut height = cmp::max(optimal, 3);
+            loop {
+                if let Some(answer) = solve_for_size(totems, width, height) {
+                    return Some(answer);
+                }
+                height += 1;
+                if let Some(answer) = solve_for_size(totems, width, height) {
+                    return Some(answer);
+                }
+                width += 1;
+            }
         }
-        height += 1;
+        _problem_size => {
+            // TODO
+            None
+        }
     }
-
-    None
 }
 
 fn solve_for_size(totems: &[Totem], width: i32, height: i32) -> Option<Answer> {
-    #[cfg(feature = "timing")]
-    let now = std::time::Instant::now();
-
     let problem_size = totems.len() as i32;
 
     // Total grid cells
@@ -63,14 +72,10 @@ fn solve_for_size(totems: &[Totem], width: i32, height: i32) -> Option<Answer> {
         println!("Board too small!");
         return None;
     }
-    if problem_size > 10 && total_cells - total_minos < 4 {
-        println!("Fit is very unlikely!");
-        return None;
-    }
 
     let mut row_idx = 0;
     let mut matrix = DlxMatrix::new();
-    let mut mappings: Vec<(&'static ShapeVariant, (i32, i32))> = Vec::new();
+    let mut mappings: Vec<(&'static ShapeVariant, (usize, usize))> = Vec::new();
     for (totem_idx, totem) in totems.iter().enumerate() {
         for shape in totem.get_rotations() {
             for (y, x) in iproduct!(0..height, 0..width) {
@@ -102,7 +107,7 @@ fn solve_for_size(totems: &[Totem], width: i32, height: i32) -> Option<Answer> {
                         }
                     }
 
-                    mappings.insert(row_idx as usize, (shape, (x, y)));
+                    mappings.insert(row_idx as usize, (shape, (x as usize, y as usize)));
 
                     #[cfg(feature = "visualize")]
                     println!(
@@ -125,18 +130,7 @@ fn solve_for_size(totems: &[Totem], width: i32, height: i32) -> Option<Answer> {
 
     println!("Total rows: {}", matrix.rows());
 
-    #[cfg(feature = "timing")]
-    println!("Time taken: {}ms", now.elapsed().as_millis());
-
-    #[cfg(feature = "timing")]
-    let now = std::time::Instant::now();
-
     let solution = matrix.solve_first();
-
-    #[cfg(feature = "timing")]
-    println!("Time taken: {}ms", now.elapsed().as_millis());
-
-    println!("Solution: {:?}", solution);
 
     if let Some(cols) = solution {
         let answer = cols
@@ -144,20 +138,12 @@ fn solve_for_size(totems: &[Totem], width: i32, height: i32) -> Option<Answer> {
             .filter_map(|idx| {
                 mappings
                     .get(idx as usize)
-                    .map(|&(variant, (offset_x, offset_y))| {
-                        TotemAnswer::new(
-                            variant.shape,
-                            variant
-                                .coords
-                                .iter()
-                                .map(|(x, y)| (offset_x as usize + x, offset_y as usize + y))
-                                .collect(),
-                        )
-                    })
+                    .map(|&(variant, (offset_x, offset_y))| variant.as_answer(offset_x, offset_y))
             })
             .collect();
         Some(Answer::new(answer))
     } else {
+        println!("No solution!");
         None
     }
 }
