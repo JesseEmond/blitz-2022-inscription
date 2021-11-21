@@ -1,6 +1,5 @@
 use crate::{
     game_interface::{Answer, Question, TotemAnswer, TotemBag, TOTEMS},
-    scoring::{score, OptimalDimensions},
     shape_info::ShapeVariant,
     solver::{macros::solver_boilerplate, Solver},
 };
@@ -132,30 +131,13 @@ fn try_fit(mut board: Board, mut dist: TotemBag) -> Option<Vec<TotemAnswer>> {
     }
 }
 
-fn solve_greedy(question: &Question) -> Vec<TotemAnswer> {
-    let dist = question.get_totem_bag();
-    let answer_size = question.totems.len();
-    let n_squares = answer_size * 4;
-    let mut side = cmp::max((n_squares as f64).sqrt().ceil() as usize, 4);
-    loop {
-        println!("Trying {0}x{0}...", side);
-        if let Some(fit) = try_fit(Board::new(side, answer_size), dist.clone()) {
-            return fit;
-        }
-        side += 1;
-    }
-}
-
 pub struct GreedySolver {
-    optimal_dims: OptimalDimensions,
 }
 
 impl GreedySolver {
     /// Initialize your solver
     pub fn new() -> Self {
-        Self {
-            optimal_dims: OptimalDimensions::new(),
-        }
+        Self { }
     }
 
     /// Answer the question
@@ -163,18 +145,22 @@ impl GreedySolver {
         let num_totems = question.totems.len();
         println!("Received question with {} totems.", num_totems);
 
-        let inferred_level = (num_totems as f64).log2().ceil() as usize;
-        let (optimal_w, optimal_h) = self.optimal_dims.level_dims(inferred_level)[0];
-        println!(
-            "Optimal dims for level {} would be {}x{}, which would give score {}",
-            inferred_level + 1,
-            optimal_w,
-            optimal_h,
-            score(num_totems, optimal_w, optimal_h)
-        );
-
         solver_boilerplate! {
-            Answer::new(solve_greedy(&question))
+            Answer::new(self.do_solve(question))
+        }
+    }
+
+    fn do_solve(&self, question: &Question) -> Vec<TotemAnswer> {
+        let bag = question.get_totem_bag();
+        let answer_size = question.totems.len();
+        let n_squares = answer_size * 4;
+        let mut side = cmp::max((n_squares as f64).sqrt().ceil() as usize, 4);
+        loop {
+            println!("Trying {0}x{0}...", side);
+            if let Some(sln) = self.try_solve(side, side, &bag) {
+                return sln;
+            }
+            side += 1;
         }
     }
 }
@@ -182,5 +168,13 @@ impl GreedySolver {
 impl Solver for GreedySolver {
     fn solve(question: &Question) -> Answer {
         Self::new().get_answer(question)
+    }
+
+    fn try_solve(&self, width: usize, height: usize, bag: &TotemBag) -> Option<Vec<TotemAnswer>> {
+        // TODO implement w/h for greedy.
+        assert!(width == height);
+        let answer_size = bag.total();
+        let side = width;
+        try_fit(Board::new(side, answer_size), bag.clone())
     }
 }

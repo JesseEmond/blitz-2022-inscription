@@ -1,7 +1,9 @@
-use crate::game_interface::{Answer, Question};
+use crate::game_interface::{Answer, Question, TotemAnswer, TotemBag};
 
 pub trait Solver {
     fn solve(question: &Question) -> Answer;
+    
+    fn try_solve(&self, width: usize, height: usize, bag: &TotemBag) -> Option<Vec<TotemAnswer>>;
 }
 
 #[allow(clippy::single_component_path_imports)]

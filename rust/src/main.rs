@@ -2,14 +2,17 @@ use std::env;
 
 mod client;
 mod game_interface;
-mod greedy_solver;
 mod scoring;
 mod shape_info;
 mod solver;
 
+// Solvers
+mod greedy_solver;
+mod hybrid_solver;
+
 use client::{LocalGameClient, WebSocketGameClient};
 
-type SelectedSolver = greedy_solver::GreedySolver;
+type SelectedSolver = hybrid_solver::HybridSolver;
 
 #[tokio::main]
 async fn main() {
