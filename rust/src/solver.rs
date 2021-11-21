@@ -2,7 +2,7 @@ use crate::game_interface::{Answer, Question, TotemAnswer, TotemBag};
 
 pub trait Solver {
     fn solve(question: &Question) -> Answer;
-    
+
     fn try_solve(&self, width: usize, height: usize, bag: &TotemBag) -> Option<Vec<TotemAnswer>>;
 }
 
@@ -55,14 +55,25 @@ pub fn visualize(answer: &Answer) {
     let h = max_y + 1;
 
     let mut lines = vec![vec![b'.'; w]; h];
+    let mut overlap = false;
     for totem in &answer.totems {
         for (x, y) in &totem.coordinates {
+            if lines[*y][*x] != b'.' {
+                overlap = true;
+            }
             lines[*y][*x] = GLYPHS[totem.shape as usize];
         }
     }
+    let zero_set = w == 0 || h == 0 || lines[0][0] != b'.';
 
     for line in lines.into_iter().rev() {
         println!("{}", String::from_utf8(line).unwrap());
     }
-    println!("{}x{}, score={}", w, h, score(answer.totems.len(), w, h));
+    println!("{}x{}, {} totems, score={}", w, h, answer.totems.len(), score(answer.totems.len(), w, h));
+    if overlap {
+        println!("[!!!] TOTEMS OVERLAP!");
+    }
+    if !zero_set {
+        println!("[!!!] (0, 0) NOT SET!");
+    }
 }
