@@ -1,6 +1,7 @@
 use crate::client::{LocalGameClient, WebSocketGameClient};
 use crate::solver::Solver;
 use std::env;
+extern crate dlx;
 
 mod client;
 mod exact_solver;
@@ -8,6 +9,12 @@ mod game_interface;
 mod scoring;
 mod shape_info;
 mod solver;
+
+mod dlx_solver;
+mod max_rects;
+mod rect_inventory;
+mod rect_packing;
+mod subset_sum;
 
 #[tokio::main]
 async fn main() {

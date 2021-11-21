@@ -37,7 +37,6 @@ pub struct Question {
     pub totems: Vec<TotemQuestion>,
 }
 
-// TODO: try u8s?
 pub type CoordinatePair = (usize, usize);
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -49,6 +48,18 @@ pub struct TotemAnswer {
 impl TotemAnswer {
     pub fn new(shape: Totem, coordinates: Vec<CoordinatePair>) -> Self {
         TotemAnswer { shape, coordinates }
+    }
+
+    pub fn offset_by(&self, x: usize, y: usize) -> TotemAnswer {
+        let mut coords = self.coordinates.clone();
+        for (dx, dy) in &mut coords {
+            *dx += x;
+            *dy += y;
+        }
+        TotemAnswer {
+            shape: self.shape,
+            coordinates: coords,
+        }
     }
 }
 

@@ -8,15 +8,18 @@ default = ["timing"]
 timing = []
 visualize = []
 speedlogging = []
+precompute_rects = []
 
 [dependencies]
 futures-util = "0.3"
-rand = "0.8"
+rand = { version = "0.8", features = ["small_rng"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.12", features = ["full"] }
 tokio-tungstenite = "0.15"
 ordered-float = "2.8.0"
+dlx = "0.1.0"
+itertools = "0.10.1"
 
 [profile.dev]
 opt-level = 2

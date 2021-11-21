@@ -1,6 +1,14 @@
-use crate::game_interface::{CoordinatePair, Totem};
+use crate::game_interface::{CoordinatePair, Question, Totem};
 
 pub type ShapeDist = [usize; 7];
+
+pub fn get_shape_distribution(question: &Question) -> ShapeDist {
+    let mut dist: ShapeDist = [0; 7];
+    for totem in &question.totems {
+        dist[totem.shape as usize] += 1;
+    }
+    dist
+}
 
 const I_VARIANTS: [ShapeVariant; 2] = [
     // IIII

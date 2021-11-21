@@ -183,7 +183,7 @@ fn try_solve(board: &mut Board, dist: &mut ShapeDist) -> Option<Vec<TotemAnswer>
             }
         }
     }
-    if shapes_left == 0 && board.max_x + 1 == board.width && board.max_y + 1 == board.height {
+    if shapes_left == 0 {
         Some(board.assigments_to_answer())
     } else {
         None

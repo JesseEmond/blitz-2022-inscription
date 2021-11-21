@@ -1,8 +1,10 @@
 use crate::{
     exact_solver,
     game_interface::{Answer, GameMessage, Question, Totem, TotemAnswer, TotemQuestion},
+    rect_inventory::RectangleInventory,
+    rect_packing,
     scoring::{score, Dims, OptimalDimensions},
-    shape_info::{ShapeDist, ShapeVariant},
+    shape_info::{self, ShapeDist, ShapeVariant},
 };
 use rand::{
     self,
@@ -10,6 +12,8 @@ use rand::{
     seq::SliceRandom,
 };
 use std::{error::Error, cmp, thread, time::Instant};
+#[allow(unused_imports)]
+use std::path::Path;
 
 struct Board {
     width: usize,
@@ -199,14 +203,48 @@ fn try_greedy_solve(width: usize, height: usize, num_totems: usize, dist: ShapeD
 }
 
 fn do_solve(width: usize, height: usize, num_totems: usize, dist: &ShapeDist,
-            greedy: bool, greedy_multithreaded: bool) -> Option<Vec<TotemAnswer>> {
+            greedy: bool, greedy_multithreaded: bool, inventory: &RectangleInventory,
+            verbose: bool) -> Option<Vec<TotemAnswer>> {
+    // From tests, we think we're on a c5a.2xlarge, so 4 cores, 8 hyperthreaded.
+    // As IIUC going up to 8 would hurt, since we're doing purely CPU processing and not much IO:
+    // https://www.credera.com/insights/whats-in-a-vcpu-state-of-amazon-ec2-in-2018
+    let cores = 3;  // max -1
     if greedy {
-        if greedy_multithreaded {
+        // The hard levels where we must perfectly fit the pieces. Use our precomputed rectangles.
+        // Note: 16 seems to be better with the greedy approach.
+        let hard_level = num_totems == 64 || num_totems == 256;
+        let perfect_pack = num_totems * 4 == width * height;
+        if hard_level && perfect_pack {
+            if greedy_multithreaded {
+                if verbose {
+                    println!("Using multithreaded MCTS rectangle packing for {}x{} on {} totems.", width, height, num_totems);
+                }
+                rect_packing::mcts_packing(width, height, dist, inventory)
+            } else {
+                if verbose {
+                    println!("Using single threaded MCTS rectangle packing for {}x{} on {} totems.", width, height, num_totems);
+                }
+                let mut handles = vec![];
+                for _ in 0..cores {
+                    let dist = *dist;
+                    let inv = inventory.clone();
+                    handles.push(thread::spawn(move || {
+                        rect_packing::mcts_packing(width, height, &dist, &inv)
+                    }));
+                }
+                for handle in handles {
+                    if let Some(sln) = handle.join().unwrap() {
+                        return Some(sln);
+                    }
+                }
+                None
+            }
+        } else if greedy_multithreaded {
+            if verbose {
+                println!("Using multithreaded greedy packer for {}x{} on {} totems.", width, height, num_totems);
+            }
             let mut handles = vec![];
-            // From tests, we think we're on a c5a.2xlarge, so 4 cores, 8 hyperthreaded.
-            // As IIUC going up to 8 would hurt, since we're doing purely CPU processing and not much IO:
-            // https://www.credera.com/insights/whats-in-a-vcpu-state-of-amazon-ec2-in-2018
-            for _ in 0..3 {
+            for _ in 0..cores {
                 let dist = *dist;
                 handles.push(thread::spawn(move || {
                     try_greedy_solve(width, height, num_totems, dist)
@@ -219,17 +257,24 @@ fn do_solve(width: usize, height: usize, num_totems: usize, dist: &ShapeDist,
             }
             None
         } else {
+            if verbose {
+                println!("Using single threaded greedy packer for {}x{} on {} totems.", width, height, num_totems);
+            }
             try_greedy_solve(width, height, num_totems, *dist)
         }
     } else {
+        if verbose {
+            println!("Using exact solver (slow) for {}x{} on {} totems.", width, height, num_totems);
+        }
         exact_solver::solve(width, height, *dist)
     }
 }
 
 fn solve(question: &Question, level: usize,
          optimal_dims: &OptimalDimensions, greedy: bool,
-         greedy_multithreaded: bool) -> Vec<TotemAnswer> {
-    let dist = get_shape_distribution(question);
+         greedy_multithreaded: bool, inventory: &RectangleInventory,
+         verbose: bool) -> Vec<TotemAnswer> {
+    let dist = shape_info::get_shape_distribution(question);
     let min_dims = min_dimensions_needed(&dist);
     let answer_size = question.totems.len();
     for (w, h) in optimal_dims.level_dims(level) {
@@ -241,11 +286,11 @@ fn solve(question: &Question, level: usize,
             continue;
         }
         print!("Trying {}x{}... would give {}... ", *w, *h, score(answer_size, *w, *h));
-        if let Some(fit) = do_solve(*w, *h, answer_size, &dist, greedy, greedy_multithreaded) {
+        if let Some(fit) = do_solve(*w, *h, answer_size, &dist, greedy, greedy_multithreaded, inventory, verbose) {
             println!("OK!");
             return fit;
         } else if *w != *h {
-            if let Some(fit) = do_solve(*h, *w, answer_size, &dist, greedy, greedy_multithreaded) {
+            if let Some(fit) = do_solve(*h, *w, answer_size, &dist, greedy, greedy_multithreaded, inventory, verbose) {
                 // Because of our (0, 0) constraint, sometimes the rotation works.
                 // We run fast enough to just try both.
                 println!("OK!  (with rotation {}x{})", *h, *w);
@@ -273,8 +318,12 @@ fn visualize(answer: &[TotemAnswer]) {
     let w = max_x + 1;
     let h = max_y + 1;
     let mut lines = vec![vec!['.'; w as usize]; h as usize];
+    let mut overlap = false;
     for totem in answer {
         for (x, y) in &totem.coordinates {
+            if lines[*y][*x] != '.' {
+                overlap = true;
+            }
             lines[*y][*x] = GLYPHS[totem.shape as usize];
         }
     }
@@ -285,14 +334,12 @@ fn visualize(answer: &[TotemAnswer]) {
         println!();
     }
     println!("{}x{}, {} totems, score={}", w, h, answer.len(), score(answer.len(), w, h));
-}
-
-fn get_shape_distribution(question: &Question) -> ShapeDist {
-    let mut dist: ShapeDist = [0; 7];
-    for totem in &question.totems {
-        dist[totem.shape as usize] += 1;
+    if overlap {
+        println!("[!!!] TOTEMS OVERLAP!");
     }
-    dist
+    if w > 0 && h > 0 && lines[0][0] == '.' {
+        println!("[!!!] (0, 0) NOT SET!");
+    }
 }
 
 // Returns 95% confidence interval for the success probability given a given amount of 'successes'
@@ -307,19 +354,22 @@ fn binomial_confidence_interval(successes: u64, trials: u64) -> (f64, f64) {
     let a = (p_hat + z * z / (2f64 * n)) / (1f64 + z * z / n);
     let b = z / (1f64 + z * z / n);
     let c = p_hat * (1f64 - p_hat) / n + z * z / (4f64 * n * n);
-    (a - b * c.sqrt(), a + b * c.sqrt())
+    let lower = a - b * c.sqrt();
+    (if lower >= 0f64 { lower } else { 0f64 }, a + b * c.sqrt())
 }
 
 #[allow(dead_code)]
 fn debug_full_packing_probability(level: usize, greedy: bool, greedy_multithreaded: bool, 
-                                  optimal_dims: &OptimalDimensions) {
+                                  optimal_dims: &OptimalDimensions, inventory: &RectangleInventory) {
     let num_totems = 1 << level;
     let mut rng = rand::thread_rng();
     let mut total_runs = 0;
     let mut perfect_packs = 0;
+    let mut perfect_pack_seconds = 0f64;
     let mut last_time: std::time::Instant = std::time::Instant::now();
     let start_time = std::time::Instant::now();
     loop {
+        let attempt_time = std::time::Instant::now();
         let mut questions: Vec<TotemQuestion> = Vec::with_capacity(num_totems);
         let die = Uniform::from(0..7);
         for _ in 0..num_totems {
@@ -327,11 +377,13 @@ fn debug_full_packing_probability(level: usize, greedy: bool, greedy_multithread
             let shape: Totem = unsafe { std::mem::transmute(idx) };
             questions.push(TotemQuestion { shape });
         }
-        let dist = get_shape_distribution(&Question { totems: questions });
+        let dist = shape_info::get_shape_distribution(&Question { totems: questions });
         let (w, h) = optimal_dims.level_dims(level).next().unwrap();
-        if let Some(_sln) = do_solve(*w, *h, num_totems, &dist, greedy, greedy_multithreaded) {
+        if let Some(_sln) = do_solve(*w, *h, num_totems, &dist, greedy, greedy_multithreaded, inventory, /*verbose=*/false) {
             perfect_packs += 1;
-            // visualize(&_sln);  // To visually make sure the solutions are valid.
+            perfect_pack_seconds += attempt_time.elapsed().as_secs_f64();
+            #[cfg(feature = "visualize")]
+            visualize(&_sln);  // To visually make sure the solutions are valid.
         }
         total_runs += 1;
         if last_time.elapsed().as_secs_f64() > 0.5 {
@@ -339,9 +391,10 @@ fn debug_full_packing_probability(level: usize, greedy: bool, greedy_multithread
             let pack_speed = (total_runs as f64) / total_time;
             let pack_ratio = (perfect_packs as f32) / (total_runs as f32);
             let (lower_bound, upper_bound) = binomial_confidence_interval(perfect_packs, total_runs);
-            println!("{} / {} perfect packs (p={:.1}%   alpha=0.05 interval=[{:.1}%, {:.1}%]),   ~{:.2}s/it",
+            let secs_per_success = perfect_pack_seconds / (perfect_packs as f64);
+            println!("{} / {} perfect packs (p={:.1}%   alpha=0.05 interval=[{:.1}%, {:.1}%]),   ~{:.2}s/it   ~{:.2}s/success its",
                      perfect_packs, total_runs, pack_ratio * 100f32, lower_bound * 100f64, upper_bound * 100f64,
-                     1f64 / pack_speed);
+                     1f64 / pack_speed, secs_per_success);
             last_time = std::time::Instant::now();
         }
     }
@@ -349,26 +402,33 @@ fn debug_full_packing_probability(level: usize, greedy: bool, greedy_multithread
 
 pub struct Solver {
     optimal_dims: OptimalDimensions,
+    inventory: RectangleInventory,
 }
 
 impl Solver {
     /// Initialize your solver
     pub fn new() -> Self {
-        Solver { optimal_dims: OptimalDimensions::new() }
+        Solver { optimal_dims: OptimalDimensions::new(), inventory: RectangleInventory::from_precomputed() }
     }
 
     /// Answer the question
     pub fn get_answer(&self, game_message: &GameMessage) -> Result<Answer, Box<dyn Error>> {
         let question = &game_message.payload;
         let num_totems = question.totems.len();
-        let greedy = num_totems > 8;  // TODO: decide on breakpoint
+        let greedy = num_totems > 8;
         println!("Received question with {} totems.", num_totems);
 
         let inferred_level = (num_totems as f64).log2().ceil() as usize;
 
+        // Uncomment the following to generate precomputed rectangles.
+        // TODO make this a binary
+        //let rect_inv = RectangleInventory::from_scratch(32);
+        //rect_inv.save(Path::new("src/precomputed_area_32.rects")).expect("Failed to save precomputed rectangles.");
+
         // If you're trying to estimate the probability of hitting a perfect fit, uncomment the following.
         // You can set multithreading to off if you want to profile the implementation with less noise.
-        //debug_full_packing_probability(inferred_level, greedy, /*greedy_multithreaded=*/true, &self.optimal_dims);
+        // TODO make this its own binary
+        //debug_full_packing_probability(inferred_level, greedy, /*greedy_multithreaded=*/true, &self.optimal_dims, &self.inventory);
 
         let (optimal_w, optimal_h) = self.optimal_dims.level_dims(inferred_level).next().unwrap();
         println!("Optimal dims for level {} would be {}x{}, which would give score {}",
@@ -377,7 +437,8 @@ impl Solver {
         #[cfg(feature = "timing")]
         let now = Instant::now();
 
-        let solution = solve(question, inferred_level, &self.optimal_dims, greedy, /*greedy_multithreaded=*/true);
+        let solution = solve(question, inferred_level, &self.optimal_dims, greedy, /*greedy_multithreaded=*/true, &self.inventory,
+                             /*verbose=*/true);
 
         // TODO quick visual indication of whether we got the optimal score for level
 

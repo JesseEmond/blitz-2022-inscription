@@ -27,6 +27,7 @@ while True:
     else:
         print(f"Game information not available: {blitz_task}")
     launch_game()
-    print("Waiting 3 minutes...")
-    time.sleep(3 * 60)
+    wait_minutes = 3
+    print(f"Waiting {wait_minutes} minutes...")
+    time.sleep(wait_minutes * 60)
     print()
