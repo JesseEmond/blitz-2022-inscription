@@ -1,4 +1,4 @@
-use crate::{
+use application::{
     game_interface::{GameMessage, Question, Totem, TotemQuestion},
     solver::Solver,
 };

@@ -5,8 +5,10 @@ use serde_json::{json, Value};
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
 
-use crate::game_interface::GameMessage;
-use crate::solver::Solver;
+use application::{
+    game_interface::GameMessage,
+    solver::Solver,
+};
 
 pub struct WebSocketGameClient<S>
 where
