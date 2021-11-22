@@ -50,7 +50,7 @@ fn debug_packing_probability(level: usize, solver: &SelectedSolver) {
     let optimal_dims = OptimalDimensions::new();
     let (w, h) = optimal_dims.level_dims(level).first().unwrap();
     println!("Searching for perfect packs for level {}, with {} totems. Need to pack {}x{}.",
-             level, num_totems, *w, *h);
+             level + 1, num_totems, *w, *h);
     loop {
         let attempt_time = std::time::Instant::now();
         let question = Question {
@@ -105,6 +105,7 @@ fn main() {
                           .get_matches();
     let level = matches.value_of("level").unwrap();
     let level: usize = level.parse().unwrap();
+    let level = level - 1;  // Logic assumes that levels are 0-indexed.
 
     let solver = SelectedSolver::with_options(/*multithreading=*/true, /*verbose=*/false);
     debug_packing_probability(level, &solver);

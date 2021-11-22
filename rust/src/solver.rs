@@ -1,9 +1,25 @@
 use crate::game_interface::{Answer, Question, TotemAnswer, TotemBag};
+use std::cmp;
 
 pub trait Solver {
     fn solve(question: &Question) -> Answer;
 
     fn try_solve(&self, width: usize, height: usize, bag: &TotemBag) -> Option<Vec<TotemAnswer>>;
+
+    // Simple loop that tries the smallest possible square, then grows by 1 until solved.
+    fn simple_solve_loop(&self, question: &Question) -> Vec<TotemAnswer> {
+        let bag = question.get_totem_bag();
+        let answer_size = question.totems.len();
+        let n_squares = answer_size * 4;
+        let mut side = cmp::max((n_squares as f64).sqrt().ceil() as usize, 4);
+        loop {
+            println!("Trying {0}x{0}...", side);
+            if let Some(sln) = self.try_solve(side, side, &bag) {
+                return sln;
+            }
+            side += 1;
+        }
+    }
 }
 
 #[allow(clippy::single_component_path_imports)]

@@ -55,6 +55,7 @@ impl OptimalDimensions {
         OptimalDimensions { level_dims }
     }
 
+    // Get the list of optimal dimensions for a given level (NOTE: 0-indexed!).
     pub fn level_dims(&self, level: usize) -> &[Dims] {
         &self.level_dims[level]
     }

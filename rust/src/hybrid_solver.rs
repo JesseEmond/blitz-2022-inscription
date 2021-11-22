@@ -1,8 +1,9 @@
-// Solve that picks the right solving strategy based on the level.
+// Solver that picks the right solving strategy based on the level.
 // It will also try multiple solution dimensions, in the order that
 // would maximize the score.
 
 use crate::{
+    exhaustive_solver::ExhaustiveSolver,
     game_interface::{Answer, Question, TotemAnswer, TotemBag, TotemQuestion, TOTEMS},
     greedy_solver::GreedySolver,
     scoring::{score, Dims, OptimalDimensions},
@@ -34,6 +35,7 @@ pub struct HybridSolver {
     optimal_dims: OptimalDimensions,
 
     greedy: GreedySolver,
+    exhaustive: ExhaustiveSolver,
 }
 
 impl HybridSolver {
@@ -45,9 +47,10 @@ impl HybridSolver {
     pub fn with_options(multithreading: bool, verbose: bool) -> Self {
         Self {
             optimal_dims: OptimalDimensions::new(),
-            greedy: GreedySolver::new(),
             use_multithreading: multithreading,
             verbose: verbose,
+            greedy: GreedySolver::new(),
+            exhaustive: ExhaustiveSolver::new(),
         }
     }
 
@@ -140,26 +143,31 @@ impl Solver for HybridSolver {
 
     fn try_solve(&self, width: usize, height: usize, bag: &TotemBag) -> Option<Vec<TotemAnswer>> {
         let num_totems = bag.total();
-        // TODO check if greedy
+
+        // For <= 8, we can do an exhaustive search.
+        let greedy = num_totems > 8;
+
         // TODO check if hard level & perfect pack
 
         if self.verbose {
             print!("Using ");
-            if self.use_multithreading {
-                print!("multithreaded");
-            } else {
-                print!("single threaded");
-            }
+            // Multithreading only relevant for greedy solvers.
+            if greedy && self.use_multithreading { print!("multithreaded"); }
+            else if greedy { print!("single threaded"); }
             print!(" ");
-            // TODO depend on which chosen
-            print!("greedy packer");
+            if greedy { print!("greedy packer"); }
+            else { print!("exhaustive packer (slow)"); }
             println!(" for {}x{} on {} totems.", width, height, num_totems);
         }
-        // TODO other implementations, too.
-        if self.use_multithreading {
-            multithread_solver!(self.greedy, width, height, bag)
+        if !greedy {
+            self.exhaustive.try_solve(width, height, bag)
         } else {
-            self.greedy.try_solve(width, height, bag)
+            // TODO use rectangle packing here
+            if self.use_multithreading {
+                multithread_solver!(self.greedy, width, height, bag)
+            } else {
+                self.greedy.try_solve(width, height, bag)
+            }
         }
     }
 }

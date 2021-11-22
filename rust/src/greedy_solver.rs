@@ -17,7 +17,6 @@ use rand::{
     self,
     seq::SliceRandom,
 };
-use std::cmp;
 
 struct Board {
     width: usize,
@@ -60,6 +59,11 @@ impl Board {
         }
     }
 
+    fn is_set(&self, x: usize, y: usize) -> bool {
+        let mask = 1u64 << (63 - x);
+        mask & self.masked_grid[y] != 0
+    }
+
     fn mark(&mut self, shape: &ShapeVariant, left_x: usize, bottom_y: usize) {
         for (x, y) in &shape.coords {
             let x = *x + left_x;
@@ -76,9 +80,12 @@ impl Board {
             if x + 1 < self.width {
                 self.touchpoints[y][x + 1] += 1;
             }
-            if self.first_unset_y_at_x[x] == y {
-                // TODO this should really be a while loop to find the next one
-                self.first_unset_y_at_x[x] += 1;
+            let mut unset_y = self.first_unset_y_at_x[x];
+            if unset_y == y {
+                while unset_y < self.height && self.is_set(x, unset_y) {
+                    unset_y += 1;
+                }
+                self.first_unset_y_at_x[x] = unset_y;
             }
         }
         for dy in 0..shape.height {
@@ -208,21 +215,7 @@ impl GreedySolver {
         println!("Received question with {} totems.", num_totems);
 
         solver_boilerplate! {
-            Answer::new(self.do_solve(question))
-        }
-    }
-
-    fn do_solve(&self, question: &Question) -> Vec<TotemAnswer> {
-        let bag = question.get_totem_bag();
-        let answer_size = question.totems.len();
-        let n_squares = answer_size * 4;
-        let mut side = cmp::max((n_squares as f64).sqrt().ceil() as usize, 4);
-        loop {
-            println!("Trying {0}x{0}...", side);
-            if let Some(sln) = self.try_solve(side, side, &bag) {
-                return sln;
-            }
-            side += 1;
+            Answer::new(self.simple_solve_loop(question))
         }
     }
 }
