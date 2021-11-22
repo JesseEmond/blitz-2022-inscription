@@ -39,11 +39,6 @@ pub struct HybridSolver {
 }
 
 impl HybridSolver {
-    /// Initialize your solver
-    pub fn new() -> Self {
-        Self::with_options(/*multithreading=*/true, /*verbose=*/true)
-    }
-
     pub fn with_options(multithreading: bool, verbose: bool) -> Self {
         Self {
             optimal_dims: OptimalDimensions::new(),
@@ -106,7 +101,7 @@ impl HybridSolver {
         println!("!!! FAILED TO FIND SOLUTION. Should increase ranges in 'optimal dims'.");
         // Fallback to greedy instead of returning nothing.
         let question = Question { totems: bag.expand().map(|t| TotemQuestion { shape: t }).collect() };
-        GreedySolver::solve(&question).totems
+        self.greedy.solve(&question).totems
     }
 }
 
@@ -137,8 +132,12 @@ macro_rules! multithread_solver {
 }
 
 impl Solver for HybridSolver {
-    fn solve(question: &Question) -> Answer {
-        Self::new().get_answer(question)
+    fn new() -> Self {
+        Self::with_options(/*multithreading=*/true, /*verbose=*/true)
+    }
+
+    fn solve(&self, question: &Question) -> Answer {
+        self.get_answer(question)
     }
 
     fn try_solve(&self, width: usize, height: usize, bag: &TotemBag) -> Option<Vec<TotemAnswer>> {

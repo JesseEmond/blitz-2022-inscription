@@ -9,9 +9,9 @@
 // require an exact pack (although we did get a lucky 256 totems pack on the server, once!)
 
 use crate::{
-    game_interface::{Answer, Question, Totem, TotemAnswer, TotemBag, TOTEMS},
+    game_interface::{Totem, TotemAnswer, TotemBag, TOTEMS},
     shape_info::ShapeVariant,
-    solver::{macros::solver_boilerplate, Solver},
+    solver::Solver,
 };
 use rand::{
     self,
@@ -203,26 +203,9 @@ fn try_gravity_greedy_fit(board: &mut Board, mut bag: TotemBag) -> Option<Vec<To
 pub struct GreedySolver {
 }
 
-impl GreedySolver {
-    /// Initialize your solver
-    pub fn new() -> Self {
-        Self { }
-    }
-
-    /// Answer the question
-    pub fn get_answer(&self, question: &Question) -> Answer {
-        let num_totems = question.totems.len();
-        println!("Received question with {} totems.", num_totems);
-
-        solver_boilerplate! {
-            Answer::new(self.simple_solve_loop(question))
-        }
-    }
-}
-
 impl Solver for GreedySolver {
-    fn solve(question: &Question) -> Answer {
-        Self::new().get_answer(question)
+    fn new() -> Self {
+        Self { }
     }
 
     fn try_solve(&self, width: usize, height: usize, bag: &TotemBag) -> Option<Vec<TotemAnswer>> {

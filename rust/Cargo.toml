@@ -18,6 +18,7 @@ tokio = { version = "1.12", features = ["full"] }
 tokio-tungstenite = "0.15"
 ordered-float = "2.8.0"
 clap = "2.33.3"
+dlx = "0.1.0"
 
 [profile.dev]
 opt-level = 2

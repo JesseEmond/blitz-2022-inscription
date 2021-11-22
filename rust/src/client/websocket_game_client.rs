@@ -65,7 +65,8 @@ where
                 let game_message: GameMessage = serde_json::from_value(parsed)
                     .expect("The server sent a game message that could not be parsed");
 
-                let answer = S::solve(&game_message.payload);
+                let solver = S::new();
+                let answer = solver.solve(&game_message.payload);
 
                 let response =
                     json!({"type": "COMMAND", "tick": game_message.tick, "actions": answer});

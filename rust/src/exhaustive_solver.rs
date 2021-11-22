@@ -2,9 +2,9 @@
 // The running time grows exponentially with the number of totems,
 // so this should only be used for <= 8 totems.
 use crate::{
-    game_interface::{Answer, Question, Point, Totem, TotemAnswer, TotemBag, TOTEMS},
+    game_interface::{Point, Totem, TotemAnswer, TotemBag, TOTEMS},
     shape_info::ShapeVariant,
-    solver::{macros::solver_boilerplate, Solver},
+    solver::Solver,
 };
 use std::cmp;
 
@@ -136,26 +136,9 @@ fn recursive_solve(board: &mut Board, bag: &mut TotemBag) -> Option<Vec<TotemAns
 pub struct ExhaustiveSolver {
 }
 
-impl ExhaustiveSolver {
-    /// Initialize your solver
-    pub fn new() -> Self {
-        Self { }
-    }
-
-    /// Answer the question
-    pub fn get_answer(&self, question: &Question) -> Answer {
-        let num_totems = question.totems.len();
-        println!("Received question with {} totems.", num_totems);
-
-        solver_boilerplate! {
-            Answer::new(self.simple_solve_loop(question))
-        }
-    }
-}
-
 impl Solver for ExhaustiveSolver {
-    fn solve(question: &Question) -> Answer {
-        Self::new().get_answer(question)
+    fn new() -> Self {
+        Self { }
     }
 
     fn try_solve(&self, width: usize, height: usize, bag: &TotemBag) -> Option<Vec<TotemAnswer>> {

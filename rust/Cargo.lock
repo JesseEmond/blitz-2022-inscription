@@ -16,6 +16,7 @@ name = "application"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "dlx",
  "futures-util",
  "ordered-float",
  "rand",
@@ -113,6 +114,12 @@ checksum = "d3dd60d1080a57a05ab032377049e0591415d2b31afd7028356dbf3cc6dcb066"
 dependencies = [
  "generic-array",
 ]
+
+[[package]]
+name = "dlx"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d35932729557621ee070e0528f58ff36dfd7f5a2c8341a94ba153464c321ff2c"
 
 [[package]]
 name = "fnv"

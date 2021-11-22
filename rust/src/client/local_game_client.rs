@@ -46,6 +46,7 @@ where
             payload: question,
         };
 
-        S::solve(&game_message.payload);
+        let solver = S::new();
+        solver.solve(&game_message.payload);
     }
 }
