@@ -106,6 +106,6 @@ fn main() {
     let level = matches.value_of("level").unwrap();
     let level: usize = level.parse().unwrap();
 
-    let solver = SelectedSolver::new();
+    let solver = SelectedSolver::with_options(/*multithreading=*/true, /*verbose=*/false);
     debug_packing_probability(level, &solver);
 }

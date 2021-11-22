@@ -9,7 +9,7 @@ use crate::{
     shape_info::ShapeVariant,
     solver::{macros::solver_boilerplate, Solver},
 };
-use std::cmp;
+use std::{cmp, thread};
 
 // Minimum dimensions needed to fit the individual totems in the bag.
 // This is used to avoid trying e.g. a 2x2 board when we have an "L" piece, for instance.
@@ -27,16 +27,27 @@ fn min_dimensions_needed(bag: &TotemBag) -> Dims {
 }
 
 pub struct HybridSolver {
+    // Usually want this on, but can be useful to turn off when profiling.
+    use_multithreading: bool,
+    // Probably want this on on the server, but not when evaluating offline in a loop.
+    verbose: bool,
     optimal_dims: OptimalDimensions,
+
     greedy: GreedySolver,
 }
 
 impl HybridSolver {
     /// Initialize your solver
     pub fn new() -> Self {
+        Self::with_options(/*multithreading=*/true, /*verbose=*/true)
+    }
+
+    pub fn with_options(multithreading: bool, verbose: bool) -> Self {
         Self {
             optimal_dims: OptimalDimensions::new(),
             greedy: GreedySolver::new(),
+            use_multithreading: multithreading,
+            verbose: verbose,
         }
     }
 
@@ -96,13 +107,59 @@ impl HybridSolver {
     }
 }
 
+macro_rules! multithread_solver {
+    ( $x: expr, $w: ident, $h: ident, $bag: ident ) => {
+        {
+            // From tests, we think we're on a c5a.2xlarge, so 4 cores, 8 hyperthreaded.
+            // As IIUC going up to 8 would hurt, since we're doing purely CPU processing
+            // and not much IO:
+            // https://www.credera.com/insights/whats-in-a-vcpu-state-of-amazon-ec2-in-2018
+            let cores = 4-1;  // leave some breathing room with -1
+            let mut handles = vec![];
+            for _ in 0..cores {
+                let bag = $bag.clone();
+                let solver = $x.clone();
+                handles.push(thread::spawn(move || {
+                    solver.try_solve($w, $h, &bag)
+                }));
+            }
+            for handle in handles {
+                if let Some(sln) = handle.join().unwrap() {
+                    return Some(sln);
+                }
+            }
+            None
+        }
+    };
+}
+
 impl Solver for HybridSolver {
     fn solve(question: &Question) -> Answer {
         Self::new().get_answer(question)
     }
 
     fn try_solve(&self, width: usize, height: usize, bag: &TotemBag) -> Option<Vec<TotemAnswer>> {
+        let num_totems = bag.total();
+        // TODO check if greedy
+        // TODO check if hard level & perfect pack
+
+        if self.verbose {
+            print!("Using ");
+            if self.use_multithreading {
+                print!("multithreaded");
+            } else {
+                print!("single threaded");
+            }
+            print!(" ");
+            // TODO depend on which chosen
+            print!("greedy packer");
+            println!(" for {}x{} on {} totems.", width, height, num_totems);
+        }
         // TODO other implementations, too.
-        self.greedy.try_solve(width, height, bag)
+        if self.use_multithreading {
+            multithread_solver!(self.greedy, width, height, bag)
+        } else {
+            self.greedy.try_solve(width, height, bag)
+        }
     }
 }

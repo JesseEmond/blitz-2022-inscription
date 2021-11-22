@@ -192,6 +192,7 @@ fn try_gravity_greedy_fit(board: &mut Board, mut bag: TotemBag) -> Option<Vec<To
     }
 }
 
+#[derive(Clone)]
 pub struct GreedySolver {
 }
 
