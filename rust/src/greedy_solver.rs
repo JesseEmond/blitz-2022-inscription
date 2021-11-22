@@ -233,6 +233,16 @@ impl Solver for GreedySolver {
 
     fn try_solve(&self, width: usize, height: usize, bag: &TotemBag) -> Option<Vec<TotemAnswer>> {
         let num_totems = bag.total();
-        try_gravity_greedy_fit(&mut Board::new(width, height, num_totems), bag.clone())
+
+        // Try multiple times due to the stochastic nature when multiple totems have the same number of
+        // touchpoints. Doing so improves the packing %. Can only afford so many attempts at higher levels,
+        // however.
+        let attempts = if num_totems < 256 { 1000 } else { 100 };
+        for _ in 0..attempts {
+            if let Some(sln) = try_gravity_greedy_fit(&mut Board::new(width, height, num_totems), bag.clone()) {
+                return Some(sln);
+            }
+        }
+        None
     }
 }
