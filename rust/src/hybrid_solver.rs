@@ -9,6 +9,7 @@ use crate::{
     scoring::{score, Dims, OptimalDimensions},
     shape_info::ShapeVariant,
     solver::{macros::solver_boilerplate, Solver},
+    rect_packing_solver::RectPackingSolver,
 };
 use std::{cmp, thread};
 
@@ -36,6 +37,7 @@ pub struct HybridSolver {
 
     greedy: GreedySolver,
     exhaustive: ExhaustiveSolver,
+    rect_packing: RectPackingSolver,
 }
 
 impl HybridSolver {
@@ -46,6 +48,7 @@ impl HybridSolver {
             verbose: verbose,
             greedy: GreedySolver::new(),
             exhaustive: ExhaustiveSolver::new(),
+            rect_packing: RectPackingSolver::new(),
         }
     }
 

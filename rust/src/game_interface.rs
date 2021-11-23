@@ -107,7 +107,7 @@ pub struct TotemQuestion {
 }
 
 #[repr(transparent)]
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct TotemBag([usize; TOTEM_COUNT]);
 
 impl TotemBag {
@@ -143,6 +143,14 @@ impl TotemBag {
         TOTEMS
             .iter()
             .flat_map(move |&t| iter::repeat(t).take(self.0[t]))
+    }
+
+    pub fn can_afford(&self, cost: &TotemBag) -> bool {
+        let mut affordable = true;
+        for totem in TOTEMS {
+            affordable &= cost[totem] <= self[totem];
+        }
+        affordable
     }
 
     pub fn min(&self) -> Totem {

@@ -12,8 +12,8 @@ use application::{
 use clap::{Arg, App};
 use rand::seq::SliceRandom;
 
-// Imports only for visualization
-#[allow(unused_imports)]
+// Imports only for visualization, when enabled.
+#[cfg(feature = "visualize")]
 use application::{
     game_interface::Answer,
     solver,
@@ -36,7 +36,6 @@ fn binomial_confidence_interval(successes: u64, trials: u64) -> (f64, f64) {
     let lower = a - b * c.sqrt();
     (if lower >= 0f64 { lower } else { 0f64 }, a + b * c.sqrt())
 }
-
 
 fn debug_packing_probability(level: usize, solver: &SelectedSolver) {
     let num_totems = 1 << level;

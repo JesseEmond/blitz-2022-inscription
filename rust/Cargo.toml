@@ -19,6 +19,7 @@ tokio-tungstenite = "0.15"
 ordered-float = "2.8.0"
 clap = "2.33.3"
 dlx = "0.1.0"
+itertools = "0.10.1"
 
 [profile.dev]
 opt-level = 2
