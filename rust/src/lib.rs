@@ -3,6 +3,7 @@ pub mod rect_inventory;
 pub mod scoring;
 pub mod shape_info;
 pub mod solver;
+pub mod subset_sum;
 
 // Solvers
 pub mod dlx_solver;

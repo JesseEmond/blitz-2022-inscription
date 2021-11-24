@@ -108,7 +108,7 @@ pub struct TotemQuestion {
 
 #[repr(transparent)]
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
-pub struct TotemBag([usize; TOTEM_COUNT]);
+pub struct TotemBag(pub [usize; TOTEM_COUNT]);
 
 impl TotemBag {
     pub fn new() -> Self {
@@ -151,6 +151,18 @@ impl TotemBag {
             affordable &= cost[totem] <= self[totem];
         }
         affordable
+    }
+
+    pub fn add(&mut self, cost: &TotemBag) {
+        for totem in TOTEMS {
+            self.0[totem] += cost[totem];
+        }
+    }
+
+    pub fn subtract(&mut self, cost: &TotemBag) {
+        for totem in TOTEMS {
+            self.0[totem] -= cost[totem];
+        }
     }
 
     pub fn min(&self) -> Totem {
