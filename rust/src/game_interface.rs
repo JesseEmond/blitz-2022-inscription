@@ -147,20 +147,20 @@ impl TotemBag {
 
     pub fn can_afford(&self, cost: &TotemBag) -> bool {
         let mut affordable = true;
-        for totem in TOTEMS {
+        for totem in TOTEMS.iter() {
             affordable &= cost[totem] <= self[totem];
         }
         affordable
     }
 
     pub fn add(&mut self, cost: &TotemBag) {
-        for totem in TOTEMS {
+        for totem in TOTEMS.iter() {
             self.0[totem] += cost[totem];
         }
     }
 
     pub fn subtract(&mut self, cost: &TotemBag) {
-        for totem in TOTEMS {
+        for totem in TOTEMS.iter() {
             self.0[totem] -= cost[totem];
         }
     }

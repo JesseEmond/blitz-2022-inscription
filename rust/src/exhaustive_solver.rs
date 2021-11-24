@@ -98,7 +98,7 @@ impl Board {
 // If a given placement failed to solve, 'board' and 'bag' will go back to their input values.
 fn recursive_solve(board: &mut Board, bag: &mut TotemBag) -> Option<Vec<TotemAnswer>> {
     let mut shapes_left = 0;
-    for totem in TOTEMS {
+    for totem in TOTEMS.iter() {
         let n_totems = bag[totem];
         shapes_left += n_totems;
         if n_totems == 0 { continue }

@@ -18,7 +18,7 @@ use std::{cmp, thread};
 // Note: this is done based on the smallest width rotation of each shape.
 fn min_dimensions_needed(bag: &TotemBag) -> Dims {
     let mut dims = (0, 0);
-    for totem in TOTEMS {
+    for totem in TOTEMS.iter() {
         if bag.contains(&totem) {
             let dim = ShapeVariant::minimum_dims(&totem);
             dims.0 = cmp::max(dims.0, dim.0);

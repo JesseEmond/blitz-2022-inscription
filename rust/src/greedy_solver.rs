@@ -160,7 +160,7 @@ fn try_gravity_greedy_fit(board: &mut Board, mut bag: TotemBag) -> Option<Vec<To
         let mut shapes_left = 0;
         let mut max_touchpoints = 0;
 
-        for totem in TOTEMS {
+        for totem in TOTEMS.iter() {
             let n_totem = bag[totem];
             shapes_left += n_totem;
             if n_totem > 0 {

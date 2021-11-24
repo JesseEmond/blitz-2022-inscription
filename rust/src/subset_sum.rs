@@ -18,7 +18,7 @@ type TotemBagHash = u64;
 fn hash_bag(bag: &TotemBag) -> TotemBagHash {
     let mut h = 0u64;
     let mut mult = 1u64;
-    for totem in TOTEMS {
+    for totem in TOTEMS.iter() {
         h += bag[totem] as u64 * mult;
         mult *= 513u64;  // We only care about up to 512 shapes, so can encode like this.
     }
