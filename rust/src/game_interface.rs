@@ -239,6 +239,15 @@ impl TotemAnswer {
     pub fn new(shape: Totem, coordinates: [Point; 4]) -> Self {
         TotemAnswer { shape, coordinates }
     }
+
+    pub fn offset_by(&self, x: usize, y: usize) -> TotemAnswer {
+        let mut coords = self.coordinates.clone();
+        for (dx, dy) in &mut coords {
+            *dx += x;
+            *dy += y;
+        }
+        TotemAnswer::new(self.shape, coords)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]

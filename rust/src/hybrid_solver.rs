@@ -148,23 +148,38 @@ impl Solver for HybridSolver {
 
         // For <= 8, we can do an exhaustive search.
         let greedy = num_totems > 8;
+        // The hard levels where we must perfectly fit the pieces. Use precomputed rectangles and
+        // treat this as a "rectangle packing" problem, then.
+        // Note: 16 seems to be better with the greedy approach.
+        let hard_level = num_totems == 64 || num_totems == 256;
+        let perfect_pack = num_totems * 4 == width * height;
 
-        // TODO check if hard level & perfect pack
+        let exhaustive_packer = !greedy;
+        let rect_packer = greedy && hard_level && perfect_pack;
+        let greedy_packer = greedy && !rect_packer;
 
         if self.verbose {
             print!("Using ");
             // Multithreading only relevant for greedy solvers.
-            if greedy && self.use_multithreading { print!("multithreaded"); }
-            else if greedy { print!("single threaded"); }
-            print!(" ");
-            if greedy { print!("greedy packer"); }
+            if greedy {
+                if self.use_multithreading { print!("multithreaded"); }
+                else { print!("single threaded"); }    
+                print!(" ");
+            }
+            if rect_packer { print!("MCTS rectangle packer"); }
+            else if greedy_packer { print!("greedy packer"); }
             else { print!("exhaustive packer (slow)"); }
             println!(" for {}x{} on {} totems.", width, height, num_totems);
         }
-        if !greedy {
+        if exhaustive_packer {
             self.exhaustive.try_solve(width, height, bag)
-        } else {
-            // TODO use rectangle packing here
+        } else if rect_packer {
+            if self.use_multithreading {
+                multithread_solver!(self.rect_packing, width, height, bag)
+            } else {
+                self.rect_packing.try_solve(width, height, bag)
+            }
+        } else {  // greedy packer
             if self.use_multithreading {
                 multithread_solver!(self.greedy, width, height, bag)
             } else {

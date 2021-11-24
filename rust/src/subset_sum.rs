@@ -8,7 +8,7 @@
 
 use crate::{
     game_interface::{TotemBag, TOTEMS},
-    rect_inventory::{self, RectangleInventory, RectangleMetadata},
+    rect_inventory::{RectangleInventory, RectangleMetadata},
 };
 use std::collections::HashSet;
 
