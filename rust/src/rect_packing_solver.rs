@@ -187,7 +187,7 @@ impl Solver for RectPackingSolver {
     fn new() -> Self {
         Self {
             inventory: RectangleInventory::from_precomputed(
-                &"../src/precomputed_area_32.rects".to_string()),
+                &"src/precomputed_area_32.rects".to_string()),
         }
     }
 
