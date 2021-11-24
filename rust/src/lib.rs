@@ -1,4 +1,5 @@
 pub mod game_interface;
+pub mod max_rects;
 pub mod rect_inventory;
 pub mod scoring;
 pub mod shape_info;
