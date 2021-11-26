@@ -8,7 +8,7 @@ This year, much like [last year's inscription challenge](https://github.com/Jess
 
 We are given a set of Tetris pieces and are asked to pack them as tightly as possible into (ideally) a square.
 
-This year, we started from a greedy solution in Python, then moved to Rust, then got excellently trolled by Coveo.... We got to a score of `~5990` points through mostly speed optimizations, until we got passed by the team "The Farmers" on the leaderboard. The celebration post on _The Farmers_' score crossing `6000` gave a bit of an unexpected hint on their strategy, which we used as inspiration to do a bunch more work to get to our final score of `6012.50`. Both teams reached that score and mutually agreed to stop there, given that getting any higher was mostly based on luck.
+This year, we started from a greedy solution in Python, then moved to Rust, then got excellently trolled by Coveo.... We got to a score of `~5990` points through mostly speed optimizations, until we got passed by the team _The Farmers_ on the leaderboard. The celebration post on _The Farmers_' score crossing `6000` gave a bit of an unexpected hint on their strategy, which we used as inspiration to do a bunch more work to get to our final score of `6012.50`. Both teams reached that score and mutually agreed to stop there, given that getting any higher was mostly based on luck.
 
 This final score is just shy of the theoretical maximum of `6027.50`, which based on offline evaluations we find our solver has a `~0.11%` probability of hitting, which would have taken an expected `~929` runs to get.
 
@@ -128,17 +128,17 @@ We also implemented an "exhaustive solver" that tries every possible placement w
 
 With this, combined with an `automate.py` script that ran overnight (script that re-launches our solver on the server every 2-3 minutes  using the same behind-the-scenes GraphQL API as the challenge website is using), we were able to get a score of [`5994.50`](https://twitter.com/JesseEmond/status/1457357117778706436), beating Marc's last feasible fake score. Looking it up, we had gotten lucky with a perfect pack on the `256` totems level, which only had a probability of about ~0.2% in our offline tool!
 
-### Rectangle Packing, Inspired by "The Farmers"!
+### Rectangle Packing, Inspired by _The Farmers_!
 
-#### "The Farmers" :eyes:
+#### _The Farmers_ :eyes:
 
-A bit after that, the team "The Farmers" passed us on the leaderboad (this time real participants!), getting a score of `5995.50`. Then later `6004.72`. Wow! Clearly they were doing something much better, and computing the scores offline we saw that a score of `6004.72` amounted to getting every level at the optimal score, aside from level 2 and 5. Very nice!
+A bit after that, the team _The Farmers_ passed us on the leaderboad (this time real participants!), getting a score of `5995.50`. Then later `6004.72`. Wow! Clearly they were doing something much better, and computing the scores offline we saw that a score of `6004.72` amounted to getting every level at the optimal score, aside from level 2 and 5. Very nice!
 
-At some point, to celebrate the first team crossing 6000 points and to showcase how impressive a perfect fit with 256 totems is, the CoveoBlitz team shared a screenshot of one of the solutions by "The Farmers"... :eyes:
+At some point, to celebrate the first team crossing 6000 points and to showcase how impressive a perfect fit with 256 totems is, the CoveoBlitz team shared a screenshot of one of the solutions by _The Farmers_... :eyes:
 
 What immediately stood out to us was the pattern of smaller rectangles (~4x8 dimensions) in their solution, which hinted at the use of an approach that we had briefly considered: precompute possible rectangles offline, and try to fit rectangles on-the-fly instead. We had scratched that idea off because our "lucky" 256 pack with our greedy solver had no clear possible rectangular separations, so we mistakenly thought that focusing on rectangles would either not work or ignore too big of the solution space. Clearly that was a wrong call.
 
-So we decided to try implementing a precomputed rectangle packing solver for the harder levels, to see if this would yield a similar score. Credits to "The Farmers" for the idea here, otherwise we wouldn't have known that this was an approach that was truly feasible.
+So we decided to try implementing a precomputed rectangle packing solver for the harder levels, to see if this would yield a similar score. Credits to _The Farmers_ for the idea here, otherwise we wouldn't have known that this was an approach that was truly feasible.
 
 #### Precomputing rectangles offline
 
@@ -184,11 +184,11 @@ The solver for a given level and dimensions is picked based on this logic:
 - *64 or 256 totems and dimensions require a perfect fit*: **rectangle packing**, considerably increases our odds of a perfect fit compared to greedy.
 - *otherwise*: **greedy solver**, this is fast and gets the optimal score on every even level. For 16 totems, seems to be doing very slightly better than rectangle packing, so use it there as well.
 
-With this, we were able to get `6012.50` points, which "The Farmers" quickly tied as well!
+With this, we were able to get `6012.50` points, which _The Farmers_ quickly tied as well!
 
 In retrospect, it is very sad to do all this extra work only for two levels, and only for a few extra points, but this does remind us of last year's Blitz inscription challenge in that way...
 
-Our approach is likely overcomplicated so we are eager to hear about the solution by "The Farmers", but we also learned a lot in the process, which is really the most important part.
+Our approach is likely overcomplicated so we are eager to hear about the solution by _The Farmers_, but we also learned a lot in the process, which is really the most important part.
 
 ### Probability of a Perfect Score
 
@@ -208,7 +208,7 @@ For fun, let's compute what is the optimal score that we could get, and what wou
 | 10  (512 totems)  | `3004.0 (46x46)`            | Greedy       | 100.0%                      |
 | **TOTAL**         | **6027.50 points**          | **Hybrid**   | **0.11%**                   |
 
-So to get the perfect score of `6027.50` points, we would have needed, on average, about 929 runs. If we're re-running every 2 minutes, that's ~31 hours, which is clearly within reach. :) But at that point, both our team and "The Farmers" agreed that we could reach that and that it was mostly luck-based then, so we agreed to stop there and call it a tie.
+So to get the perfect score of `6027.50` points, we would have needed, on average, about 929 runs. If we're re-running every 2 minutes, that's ~31 hours, which is clearly within reach. :) But at that point, both our team and _The Farmers_ agreed that we could reach that and that it was mostly luck-based then, so we agreed to stop there and call it a tie.
 
 ## Code Overview
 
