@@ -7,7 +7,7 @@ use application::{
     game_interface::{Question, TotemQuestion, TOTEMS},
     hybrid_solver,
     solver::Solver,
-    scoring::OptimalDimensions,
+    scoring::{score, OptimalDimensions},
 };
 use clap::{Arg, App};
 use rand::seq::SliceRandom;
@@ -48,8 +48,8 @@ fn debug_packing_probability(level: usize, solver: &SelectedSolver) {
 
     let optimal_dims = OptimalDimensions::new();
     let (w, h) = optimal_dims.level_dims(level).first().unwrap();
-    println!("Searching for perfect packs for level {}, with {} totems. Need to pack {}x{}.",
-             level + 1, num_totems, *w, *h);
+    println!("Searching for perfect packs for level {}, with {} totems. Need to pack {}x{} for a score of {}.",
+             level + 1, num_totems, *w, *h, score(num_totems, *w, *h));
     loop {
         let attempt_time = std::time::Instant::now();
         let question = Question {
