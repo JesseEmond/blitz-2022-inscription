@@ -369,7 +369,20 @@ Z T I          I J J          I I I I                J S T T
 T T T          I J J                                 J J J T
 ```
 
-TODO image
+Here are some of those precomputed rectangles:
+
+```
+3x8            3x8            4x7                    4x8
+{2xI,2xT,2xZ}  {1xI,4xJ,1xO}  {2xI,1xL,1xO,1xS,2xT}  {1xJ,2xL,1xO,1xS,2xT,1xZ}
+T T T          J J J          S T T T                L L L L
+I T Z          J J J          S S T T                L L O O
+I Z Z          J O O          I S T T                L L O O
+I Z I          J O O          I O O T                T T T Z
+I Z I          I J J          I O O L                S T Z Z
+Z Z I          I J J          I L L L                S S Z T
+Z T I          I J J          I I I I                J S T T
+T T T          I J J                                 J J J T
+```
 
 #### "Subset-sum" (with repeat) to get rectangle candidates
 
