@@ -131,6 +131,8 @@ Visually, the touchpoint counts look something like this:
 
 Surprisingly, that greedy approach did really well and iterating on this approach helped us get to the `5700+` points range, by introducing randomness for placements with equal touchpoints and trying multiple times with that randomness as fast as possible within our 1 second window.
 
+But, as we improved our score on the leaderboard, so did Marc's. He kept replying on the thread with pictures of his score going up, and so did our anxiety levels. We had to dive a bit more in the challenge details to know where to focus our attention to squeeze out more points.
+
 ### Challenge Levels Detailed
 
 #### Optimal solution dimensions
@@ -266,27 +268,21 @@ Based on this, the best we can do is try to maximize our probability of optimall
 
 ### Faster Solution in Rust
 
-#### Getting to 5900+ points
+#### Getting to 5900+ points, racing with Marc
 
-TODO Marc passed us
-
-Once we found out that rerunning our greedy solver multiple times in a loop could improve our probability of getting an optimal packing (due to the randomness in how we pick equivalent placements), we focused on speeding up our solver to increase the amount of attempts we can make in the 1 second limit to improve our score.
+Around that point, Marc had finally passed us on the leaderboard. We got back to work. Knowing that rerunning our greedy solver multiple times in a loop could improve our probability of getting an optimal packing (due to the randomness in how we pick equivalent placements), we focused on speeding up our solver to increase the amount of attempts we can make in the 1 second limit to try get a higher score.
 
 Thankfully, this year Coveo gave us the option of using Rust, which saved us from having to use our painful trick from [last year's inscription challenge](https://github.com/JesseEmond/blitz-2021-chal), where we were using Python just to call into our true C++ implementation.
 
-TODO rework
+By rewriting our greedy solver in Rust and optimizing a bit, we were able to get in the `5900+` points range after some work. That was enough to [reply back](https://twitter.com/JesseEmond/status/1454596178532880386) to Marc's taunt with our `5914.50` score and breathe a little. The code for this solver lives in `greedy_solver.rs`.
 
-By rewriting our greedy solver in Rust and optimizing a bit, we were able to get in the `5900+` points range after some work. By that time Marc had taunted us a bit more on Twitter about passing us on the leaderboard, but this was enough to pass him again and [reply back](https://twitter.com/JesseEmond/status/1454596178532880386) with our `5914.50` score. This solver lives in `greedy_solver.rs`.
+But just a few days later, Marc replied again, this time including a screenshot of the leaderboard where he beat our hard-earned `5914.50` points with `5964.97` points, along with [a comment](https://twitter.com/msanfacon/status/1456255330367643652) that he had "found 10 minutes to rework his algorithm"...
 
-#### TODO rework section :sotroll:
-
-A few days later, Marc replied again, this time including a screenshot of the leaderboard where he beat our hard-earned `5914.50` points with `5964.97` points, along with [a comment](https://twitter.com/msanfacon/status/1456255330367643652) that he had "found 10 minutes to rework his algorithm"...
-
-Only 10 minutes? We were wondering what we were missing, clearly there must be a better way to get perfect packings on those higher levels, we must have been approaching this the wrong way...
+...Only 10 minutes? We were wondering what we were missing, clearly there must be a better way to get perfect packings on those higher levels, we must have been approaching this from the wrong angle and there must be an easier solution that we couldn't see...
 
 ...
 
-Then Marc [replied](https://twitter.com/msanfacon/status/1456255330367643652) the next day, saying that the hardest part was really connecting to the VPN and to the DB, with a picture of the leaderboard of him with a score of `31415.92` points on the challenge, which is theoretically impossible... :)
+Then Marc [replied](https://twitter.com/msanfacon/status/1456255330367643652) the next day, saying that the hardest part was really connecting to the VPN and to the DB, with a picture of the leaderboard of him with a score of `31415.92` points on the challenge, which is simply theoretically impossible... :)
 
 Apparently the whole time he wasn't really participating, he was just telling the Blitz team every once in a while that he "worked hard on it today, and thinks he's... about 1 point away from first place now".
 
@@ -298,7 +294,7 @@ But we still wanted to beat his fake `5964.97` score, so we got back to work. We
 
 With this evaluation tool, we saw that our greedy approach worked pretty well on most levels, but had an almost null chance of ever getting the perfect pack on the 256 totems level. Because going faster means we can run more attempts in 1 second and get a higher packing probability, we profiled and optimized. Some noteworthy speed-ups came from:
 
-- Representing our grid as a list of rows with `u64` ints, since we never go as high as a width of 64. We can also pre-compute the 64-bit "masks" of each totem rotations, then checking if a totem fits on a given row amounts to doing a bit-and between 64-bit integers;
+- Representing our grid as a list of rows with `u64` ints, since we never go as high as a width of 64. We can also pre-compute the 64-bit "masks" of each totem rotation, then checking if a totem fits on a given row amounts to doing a bit-and between 64-bit integers;
   For example (using `u8` for simplicity):
   ```
   This grid:  +-----------------+
@@ -309,19 +305,19 @@ With this evaluation tool, we saw that our greedy approach worked pretty well on
               +-----------------+
 
   As 4 u8 ints     Check for
-    0b11100001     'T' fit:      Collisions:
+    0b11100001      'T' fit:     Collisions:
     0b11100001  &  0b00011100  = 0b00000000
     0b11101101  &  0b00001000  = 0b00001000
     0b11111001
   ```
-- Keeping track of "lowest unset `y` so far" for each `x` position. With this, finding the first vertical position where a given totem rotation fits can _start_ at this lowest possible position, moving up afterwards, saving up some loop iterations;
+- Keeping track of "lowest unset `y` so far" for each `x` position. With this, when finding the first vertical position where a given totem rotation could fit we can _start_ at this lowest possible position, moving up afterwards, skipping loop iterations as the grid grows;
   Visually:
   ```
   For board:            We keep track of '*':    So now, when we place 
   +-----------------+   +-----------------+      a totem, we know it
   | . . . . . . . . |   |         * *   * |      must fit at least >=
-  | . . . . O O . J |   |       * x x   x |      the '*'s for each 'x'
-  | . . . T O O . J |   |   *   x x x * x |      it occupies.
+  | . . . . O O . J |   |       * x x   x |      the '*'s for each
+  | . . . T O O . J |   |   *   x x x * x |      column it occupies.
   | . S S T T . J J |   | * x   x x x x x |
   | S S . T I I I I |   | x x * x x x x x |
   +-----------------+   +-----------------+
@@ -356,9 +352,22 @@ Checking if a totem bag can fit an `a x b` rectangle (or our odd levels also) ca
 
 To solve an exact cover problem, Donald Knuth developed the "Algorithm X", using a data structure he called ["Dancing Links"](https://arxiv.org/pdf/cs/0011047.pdf) as an internal representation that facilitates reverting the deletion of a node from a circular doubly linked list. It is quite interesting a worth reading more into! There's this neat [blog post](https://ferrous-systems.com/blog/dlx-in-rust/) about implementing DLX (Dancing Links X) in Rust, but for simplicity we used a `dlx` package and called that. The code for this solver that maps between totem packing and exact cover problems is in `dlx_solver.rs`.
 
-We coupled this with a `RectangleInventory` structure to keep track of precomputed rectangles and their cost in terms of totems, and precompute them  and store them to disk offline using `bin/precompute_rects.rs`. For our online solver, it loads in the precomputed rectangles from disk at initialization.
+We coupled this with a `RectangleInventory` structure to keep track of precomputed rectangles and their cost in terms of totems, and precompute them and store them to disk offline using `bin/precompute_rects.rs`. For our online solver, it loads in the precomputed rectangles from disk at initialization. We precomputed all rectangles made up of totems up to area 32.
 
-TODO image
+Here are some of those precomputed rectangles:
+
+```
+3x8            3x8            4x7                    4x8
+{2xI,2xT,2xZ}  {1xI,4xJ,1xO}  {2xI,1xL,1xO,1xS,2xT}  {1xJ,2xL,1xO,1xS,2xT,1xZ}
+T T T          J J J          S T T T                L L L L
+I T Z          J J J          S S T T                L L O O
+I Z Z          J O O          I S T T                L L O O
+I Z I          J O O          I O O T                T T T Z
+I Z I          I J J          I O O L                S T Z Z
+Z Z I          I J J          I L L L                S S Z T
+Z T I          I J J          I I I I                J S T T
+T T T          I J J                                 J J J T
+```
 
 #### "Subset-sum" (with repeat) to get rectangle candidates
 
@@ -366,7 +375,25 @@ Next, we needed a way to get, for a given challenge's totem bag, a combination o
 
 There might be better theoretical tools to solve this problem quickly, but we went with a simple approach that bruteforces and backtracks, trying a rectangle, calling itself recursively, and remembering totem bags that lead to dead-ends. This logic lives in `subset_sum.rs`, and `MultiDimSubsetSumIterator` gives us candidate lists of rectangles that we can exactly afford for a given totem bag. Note that we sometimes can't find combination of rectangles that would sum to our bag fast enough, so we include a max number of backtracks to give up at some point (and then maybe retry with a shuffled list).
 
-TODO image
+Here's what an example solution might look like:
+
+```
+For a challenge with the following totem bag (for a 16x16 64 totems level):
+            I   J   L   O   S   T   Z 
+          [ 8, 13, 10, 13,  4,  8,  8]
+Use these rectangles from our inventory:
+Rect 4x8  [ 3,  3,  1,  0,  1,  0,  0]
+Rect 4x8  [ 3,  3,  1,  0,  1,  0,  0]
+Rect 4x8  [ 0,  0,  1,  0,  2,  2,  3]
+Rect 4x8  [ 2,  2,  1,  0,  0,  2,  1]
+Rect 4x7  [ 0,  1,  2,  2,  0,  2,  0]
+Rect 4x4  [ 0,  0,  2,  0,  0,  0,  2]
+Rect 4x4  [ 0,  0,  2,  0,  0,  0,  2]
+Rect 4x7  [ 0,  2,  0,  5,  0,  0,  0]
+Rect 4x4  [ 0,  0,  0,  4,  0,  0,  0]
+Rect 4x5  [ 0,  2,  0,  1,  0,  2,  0]
+Rect 2x2  [ 0,  0,  0,  1,  0,  0,  0]
+```
 
 #### Monte-Carlo Tree Search for rectangle packing
 
