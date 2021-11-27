@@ -369,6 +369,8 @@ Z T I          I J J          I I I I                J S T T
 T T T          I J J                                 J J J T
 ```
 
+TODO image
+
 #### "Subset-sum" (with repeat) to get rectangle candidates
 
 Next, we needed a way to get, for a given challenge's totem bag, a combination of precomputed rectangles that have costs that sum exactly to our inventory. This is a bit analogous to a multi-dimensional subset sum problem, except that we are also allowed to reuse the same precomputed rectangle multiple times (it's more of a blueprint). It is also analogous to the knapsack problem, except our weight is again multidimensional and we want to exactly match our limit.
