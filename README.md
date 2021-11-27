@@ -336,7 +336,7 @@ A bit after that, the team _The Farmers_ passed us on the leaderboad (this time 
 
 At some point, to celebrate the first team crossing 6000 points and to showcase how impressive a perfect fit with 256 totems is, the CoveoBlitz team shared a screenshot of one of the solutions by _The Farmers_... :eyes:
 
-TODO image
+![The Farmer's 256 totems solution](writeup_images/the-farmers_256_v50.png)
 
 What immediately stood out to us was the pattern of smaller rectangles (~4x8 dimensions) in their solution, which hinted at the use of an approach that we had briefly considered: precompute possible rectangles offline, and try to fit rectangles on-the-fly instead. We had scratched that idea off because our "lucky" 256 pack with our greedy solver had no clear possible rectangular separations, so we mistakenly thought that focusing on rectangles would either not work or ignore too big of the solution space. Clearly that was a wrong call.
 
