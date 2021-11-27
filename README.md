@@ -85,9 +85,9 @@ We had to quickly get something working then. We started in Python, and our init
   
 </details>
 
-#### Twitter taunting
+#### Firing back
 
-This worked okay. It gave us `519.96` points, still far below the inscription requirement, but high enough to start replying to Marc. We replied by asking him [where his score was on the leaderboard](https://twitter.com/JesseEmond/status/1453545833337589770?s=20). :) He followed up a few days later by sending screenshots of his score on the leaderboard! So it became a race to increase our points to make sure Marc wouldn't pass us... for now.
+This worked okay. It gave us `519.96` points, still far below the inscription requirement, but high enough to start replying to Marc. We replied by asking him [where his score was on the leaderboard](https://twitter.com/JesseEmond/status/1453545833337589770?s=20). :) He followed up a few days later by sending screenshots of his score on the leaderboard! So it became a race to increase our points to stop Marc from passing us.
 
 #### Greedy solution: try to fit target dimensions
 
