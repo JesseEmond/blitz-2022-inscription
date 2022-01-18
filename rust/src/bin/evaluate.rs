@@ -4,7 +4,7 @@
 extern crate application;
 
 use application::{
-    game_interface::{Question, TotemQuestion, TOTEMS},
+    game_interface::{Question, Totem, TotemQuestion, TOTEMS},
     hybrid_solver,
     solver::Solver,
     scoring::{score, OptimalDimensions},
@@ -37,7 +37,11 @@ fn binomial_confidence_interval(successes: u64, trials: u64) -> (f64, f64) {
     (if lower >= 0f64 { lower } else { 0f64 }, a + b * c.sqrt())
 }
 
-fn debug_packing_probability(level: usize, solver: &SelectedSolver) {
+// Generates random instances of the given level and reports optimal packing probabilities.
+// If `allow_odd_t_shapes` is set to false, no instances with an odd number of `T` shapes will be generated,
+// since optimally packing a rectangle with an odd number of `T` shapes is impossible (see the
+// README for more details).
+fn debug_packing_probability(level: usize, solver: &SelectedSolver, allow_odd_t_shapes: bool) {
     let num_totems = 1 << level;
     let mut rng = rand::thread_rng();
     let mut total_runs = 0;
@@ -51,12 +55,16 @@ fn debug_packing_probability(level: usize, solver: &SelectedSolver) {
     println!("Searching for perfect packs for level {}, with {} totems. Need to pack {}x{} for a score of {}.",
              level + 1, num_totems, *w, *h, score(num_totems, *w, *h));
     loop {
-        let attempt_time = std::time::Instant::now();
+        
         let question = Question {
             totems: (0..num_totems).map(
                 |_| TotemQuestion { shape: *TOTEMS.choose(&mut rng).unwrap() }).collect()
         };
         let bag = question.get_totem_bag();
+        if !allow_odd_t_shapes && bag[Totem::T] % 2 == 1 {  // Odd 'T's can't be solved, regenerate.
+            continue;
+        }
+        let attempt_time = std::time::Instant::now();
         if let Some(_sln) = solver.try_solve(*w, *h, &bag) {
             perfect_packs += 1;
             perfect_pack_seconds += attempt_time.elapsed().as_secs_f64();
@@ -101,11 +109,18 @@ fn main() {
                                .help("Level that we are evaluating on")
                                .required(true)
                                .validator(is_valid_level))
+                          .arg(Arg::with_name("only_even_t_shapes")
+                                .long("only-even-t-shapes")
+                                .help("If puzzle instances with an odd number of 'T' shapes should not be generated \
+                                      (since they can't perfectly pack a rectangle).\nBy default odd 'T' shapes are \
+                                      generated, like in the original challenge.")
+                                .takes_value(false))
                           .get_matches();
     let level = matches.value_of("level").unwrap();
     let level: usize = level.parse().unwrap();
     let level = level - 1;  // Logic assumes that levels are 0-indexed.
+    let only_even_t_shapes: bool = matches.is_present("only_even_t_shapes");
 
     let solver = SelectedSolver::with_options(/*multithreading=*/true, /*verbose=*/false);
-    debug_packing_probability(level, &solver);
+    debug_packing_probability(level, &solver, /*allow_odd_t_shapes=*/!only_even_t_shapes);
 }

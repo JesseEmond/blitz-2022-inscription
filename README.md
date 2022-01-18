@@ -326,7 +326,7 @@ With this evaluation tool, we saw that our greedy approach worked pretty well on
 
 We also implemented an "exhaustive solver" that tries every possible placement with similar optimizations, to ensure that we find the optimal packing when possible for those lower levels. Note that we are only able to run it on <= 8 totems, for >= 16 it takes too long (especially with our 1 second constraint).
 
-With this, combined with an `automate.py` script that ran overnight (script that re-launches our solver on the server every 2-3 minutes  using the same behind-the-scenes GraphQL API as the challenge website is using), we were able to get a score of [`5994.50`](https://twitter.com/JesseEmond/status/1457357117778706436), beating Marc's last feasible fake score. Looking it up, we had gotten lucky with a perfect pack on the `256` totems level, which only had a probability of about ~0.2% in our offline tool!
+With this, combined with an `automate.py` script that ran overnight (script that re-launches our solver on the server every 2-3 minutes  using the same behind-the-scenes GraphQL API as the challenge website is using), we were able to get a score of [`5994.50`](https://twitter.com/JesseEmond/status/1457357117778706436), beating Marc's last feasible fake score. Looking it up, we had gotten lucky with a perfect pack on the `256` totems level, which only had a probability of about \~0.2% in our offline tool!
 
 ### Rectangle Packing, Inspired by _The Farmers_!
 
@@ -338,7 +338,7 @@ At some point, to celebrate the first team crossing 6000 points and to showcase 
 
 ![The Farmer's 256 totems solution](writeup_images/the-farmers_256_v50.png)
 
-What immediately stood out to us was the pattern of smaller rectangles (~4x8 dimensions) in their solution, which hinted at the use of an approach that we had briefly considered: precompute possible rectangles offline, and try to fit rectangles on-the-fly instead. We had scratched that idea off because our "lucky" 256 pack with our greedy solver had no clear possible rectangular separations, so we mistakenly thought that focusing on rectangles would either not work or ignore too big of the solution space. Clearly that was a wrong call.
+What immediately stood out to us was the pattern of smaller rectangles (\~4x8 dimensions) in their solution, which hinted at the use of an approach that we had briefly considered: precompute possible rectangles offline, and try to fit rectangles on-the-fly instead. We had scratched that idea off because our "lucky" 256 pack with our greedy solver had no clear possible rectangular separations, so we mistakenly thought that focusing on rectangles would either not work or ignore too big of the solution space. Clearly that was a wrong call.
 
 So we decided to try implementing a precomputed rectangle packing solver for the harder levels, to see if this would yield a similar score. Credits to _The Farmers_ for the idea here, otherwise we wouldn't have known that this was an approach that was truly feasible.
 
@@ -470,11 +470,11 @@ For fun, let's compute what is the optimal score that we could get, and what wou
 | 6  (32 totems)    | `176.0  (12x12)`            | Greedy       | 100.0%                      |
 | 7  (64 totems)    | `384.0  (16x16)`            | Rect packing | 48.7%                       |
 | 8  (128 totems)   | `751.0  (23x23)`            | Greedy       | 100.0%                      |
-| 9  (256 totems)   | `1536.0 (32x32)`            | Rect packing | ~18.9%                      |
+| 9  (256 totems)   | `1536.0 (32x32)`            | Rect packing | \~18.9%                     |
 | 10  (512 totems)  | `3004.0 (46x46)`            | Greedy       | 100.0%                      |
 | **TOTAL**         | **6027.50 points**          | **Hybrid**   | **0.11%**                   |
 
-So to get the perfect score of `6027.50` points, we would have needed, on average, about 929 runs. If we're re-running every 2 minutes, that's ~31 hours, which is clearly within reach. :) But at that point, both our team and _The Farmers_ agreed that we could reach that and that it was mostly luck-based then, so we agreed to stop there and call it a tie.
+So to get the perfect score of `6027.50` points, we would have needed, on average, about 929 runs. If we're re-running every 2 minutes, that's \~31 hours, which is clearly within reach. :) But at that point, both our team and _The Farmers_ agreed that we could reach that and that it was mostly luck-based then, so we agreed to stop there and call it a tie.
 
 But can still simulate getting our perfect score offline using `bin/perfect_score.rs`, and it's quite glorious when we do get it:
 
@@ -706,6 +706,52 @@ That's optimal! Found after 573 rounds.
 ```
   
 </details>
+
+### Bonus: Can't Pack a Rectangle With an Odd Number of `T` Shapes
+
+Another participant, John-William Lebel, made a very interesting observation that they proved after the event: it is impossible to perfectly pack a rectangle if we are given an odd number of `T` shapes to place. In our case, this means that if we are on an odd level (so the optimal dimensions require perfectly packing a square) and our totem bag has an odd number of `T` shapes, we can't solve it (i.e. we are forced to go for a suboptimal rectangle shape with some empty spaces in it).
+
+The proof for this, as John-William presented it, makes use of reasoning around checkerboard dark/light tiles like in [the section on tiling rectangles of the Tetromino wikipedia article](https://en.wikipedia.org/wiki/Tetromino#Filling_a_rectangle_with_one_set_of_tetrominoes):
+- If we pay attention to the dark/light colors a totem piece sits on when placed on a checkerboard pattern, notice that all pieces will touch 2 dark squares and 2 light squares (so an even number of dark/light squares), except for the `T` shape, which will touch 1 dark and 3 light squares, or vice-versa (so an odd number of dark & light squares). In other words, it's `odd * 'dark'` `odd * 'light'` for `T` shapes, and `even * 'dark'` `even * 'light'` for the rest, as can be seen below (`D=dark`, `L=light`):
+  ```
+  even * even:
+  D L   D L D L   D L D   L       D L       D L
+  L D             L       D L D     D L   D L
+
+  odd * odd:
+  D L D
+    D
+  ```
+- All of the levels requiring a perfect pack have an area that is a multiple of 4, since they must fit totems of 4 tiles each. If we split our number of tiles to pack, `4 * num_totems`, in equal dark/light tiles, we get `4 * num_totems / 2` of each color -- `2 * num_totems` dark, `2 * totems` light, so each an even number of colors to cover with our totems.
+- When given an odd number of `T` shapes to place (call this `n`), regardless of how we place them (`3 'dark', 1 'light'` or `1 'dark', 3 'light'`), we end up with the pieces covering a number of dark tiles equal to a sum with an odd number (`n`) of odd terms (odd dark tiles for each `T`), which gives us an odd sum, with a similar logic for light tiles.
+- So then we know we have an even number of dark (and light) tiles to cover to fully cover our rectangle, we know our odd number of `T` shapes take up an odd number of dark (and light) tiles, we are then left with an odd number of dark (and light) tiles to cover. All the other shapes take up an even number of dark & light tiles, so we can't do it (no sum of even terms will give us an odd term). Thus, we can't pack a rectangle when given an odd number of `T` tetrominoes.
+
+Where it gets interesting is that we were already observing this empirically on our solver for every level that requires a perfect pack, without realizing:
+- Level 3 (4 totems on a 4x4), probability of a perfect pack 9.2%
+- Level 5 (16 totems on a 8x8), probability of a perfect pack 44.5%
+- Level 7 (64 totems on a 16x16), probability of a perfect pack 48.7%
+- Level 9 (256 totems on a 32x32), probability of a perfect pack 18.9%
+
+We can see that we never go above 50% in those cases, partly because some combinations of totems can never fit in the required dimensions (e.g. level 3 is an exhaustive solver that looks at all those combinations, yet has 9.2% chance of packing a 4x4 square) and partly because our later solvers are greedy and not exhaustive, but also because we have a 50% chance of getting a puzzle input with odd `T` shapes!
+
+#### Probability of a Perfect Score, Without Odd `T` Shapes Puzzles
+Out of curiosity, we tried running our evaluation tool where it only generated puzzle inputs with an even number of `T` shapes, where we now get an updated chance of an optimal score:
+
+| Level  (# totems) | Optimal score  (dimensions) | Solver used  | Probability with our solver (no odd `T`s) |
+| ----------------- | --------------------------- | ------------ | ----------------------------------------- |
+| 1  (1 totem)      | `1.5      (1x4)`            | Exhaustive   | 100.0%                                    |
+| 2  (2 totems)     | `11.0     (3x3)`            | Exhaustive   | 27.0%                                     |
+| 3  (4 totems)     | `24.0     (4x4)`            | Exhaustive   | 14.6%                                     |
+| 4  (8 totems)     | `44.0     (6x6)`            | Exhaustive   | 99.9%                                     |
+| 5  (16 totems)    | `96.0     (8x8)`            | Greedy       | 88.3%                                     |
+| 6  (32 totems)    | `176.0  (12x12)`            | Greedy       | 100.0%                                    |
+| 7  (64 totems)    | `384.0  (16x16)`            | Rect packing | 97.5%                                     |
+| 8  (128 totems)   | `751.0  (23x23)`            | Greedy       | 100.0%                                    |
+| 9  (256 totems)   | `1536.0 (32x32)`            | Rect packing | \~36.4%                                   |
+| 10  (512 totems)  | `3004.0 (46x46)`            | Greedy       | 100.0%                                    |
+| **TOTAL**         | **6027.50 points**          | **Hybrid**   | **1.2%**                                  |
+
+With a final probability of 1.2% for a perfect score on this hypothetical variant of the challange, we could expect to get it in \~84 runs on average. Quite the difference, compared to the previous 929 runs! In any case, this allows us to improve our original code by adding an early-exit condition when we know we can't solve a perfect fit due to an odd number of `T` shapes.
 
 ## Code Overview
 
