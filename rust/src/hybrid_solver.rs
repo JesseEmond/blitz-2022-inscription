@@ -4,7 +4,7 @@
 
 use crate::{
     exhaustive_solver::ExhaustiveSolver,
-    game_interface::{Answer, Question, TotemAnswer, TotemBag, TotemQuestion, TOTEMS},
+    game_interface::{Answer, Question, Totem, TotemAnswer, TotemBag, TotemQuestion, TOTEMS},
     greedy_solver::GreedySolver,
     scoring::{score, Dims, OptimalDimensions},
     shape_info::ShapeVariant,
@@ -153,6 +153,12 @@ impl Solver for HybridSolver {
         // Note: 16 seems to be better with the greedy approach.
         let hard_level = num_totems == 64 || num_totems == 256;
         let perfect_pack = num_totems * 4 == width * height;
+
+        if perfect_pack && bag[Totem::T] % 2 == 1 {
+            // We can't fully pack a rectangle if we are given an odd number of 'T' shapes (see README),
+            // so there's no point in trying.
+            return None;
+        }
 
         let exhaustive_packer = !greedy;
         let rect_packer = greedy && hard_level && perfect_pack;
